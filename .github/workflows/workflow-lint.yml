@@ -1,0 +1,43 @@
+name: Workflow Lint
+on:
+    pull_request:
+        branches: [main]
+    push:
+        branches: [main]
+    workflow_dispatch:
+permissions:
+    contents: read
+concurrency:
+    group: workflow-lint-${{ github.event.pull_request.number || github.ref }}
+    cancel-in-progress: true
+jobs:
+    workflow-lint:
+        runs-on: ubuntu-latest
+        timeout-minutes: 10
+        steps:
+            - name: Checkout workflow sources
+              uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+              with:
+                  persist-credentials: false
+            - name: Checkout trusted workflow tooling
+              uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+              with:
+                  ref: ${{ github.event.pull_request.base.sha || github.sha }}
+                  path: automation
+                  persist-credentials: false
+            - name: Install verified actionlint
+              env:
+                  ACTIONLINT_VERSION: 1.7.12
+                  ACTIONLINT_SHA256: 8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8
+              shell: bash
+              run: bash automation/.github/scripts/ci/install-actionlint.sh
+            - name: Lint workflows
+              run: '"$RUNNER_TEMP/actionlint" -color'
+            - name: Set up Bun
+              uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+              with:
+                  bun-version: 1.4.4
+            - name: Enforce remote action pins
+              run: bun automation/.github/scripts/ci/validate-workflow-policy.ts
+            - name: Lint automation shell scripts
+              run: find .github/scripts -type f -name '*.sh' -print0 | xargs -0 -- shellcheck

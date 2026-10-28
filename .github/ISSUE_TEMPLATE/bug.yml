@@ -1,0 +1,29 @@
+name: Bug report
+description: Report a reproducible menu, keyboard, focus or integration problem.
+labels: [bug]
+body:
+    - type: input
+      id: version
+      attributes:
+          label: Package and React versions
+          placeholder: '@rentnerkev/menu 0.1.0, React 19.3.1'
+      validations:
+          required: true
+    - type: textarea
+      id: reproduction
+      attributes:
+          label: Minimal reproduction
+          description: Include steps, menu configuration and a small reproduction when possible. Never include secrets.
+      validations:
+          required: true
+    - type: textarea
+      id: expected
+      attributes:
+          label: Expected and actual behavior
+      validations:
+          required: true
+    - type: input
+      id: environment
+      attributes:
+          label: Browser, operating system and assistive technology
+          placeholder: Firefox on Windows; keyboard only or screen reader if relevant

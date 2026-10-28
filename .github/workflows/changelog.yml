@@ -1,0 +1,99 @@
+name: Release Changelog
+on:
+    release:
+        types: [published]
+permissions:
+    contents: read
+concurrency:
+    group: release-notes-${{ github.repository }}-${{ github.event.release.tag_name }}
+    cancel-in-progress: false
+jobs:
+    generate-release-notes:
+        runs-on: ubuntu-latest
+        timeout-minutes: 10
+        steps:
+            - name: Checkout trusted main automation
+              uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+              with:
+                  ref: main
+                  path: automation
+                  persist-credentials: false
+            - name: Set up Bun
+              uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+              with:
+                  bun-version: 1.4.4
+            - name: Validate stable release identity
+              id: release
+              env:
+                  GH_TOKEN: ${{ github.token }}
+              run: bun automation/.github/scripts/release/identity.ts
+            - name: Checkout exact release tag
+              uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+              with:
+                  ref: ${{ steps.release.outputs.tag }}
+                  path: source
+                  fetch-depth: 0
+                  persist-credentials: false
+            - name: Verify release source and main ancestry
+              working-directory: source
+              env:
+                  GH_TOKEN: ${{ github.token }}
+              run: bun "$GITHUB_WORKSPACE/automation/.github/scripts/release/identity.ts" --source-checkout
+            - name: Generate commit-based changelog
+              uses: orhun/git-cliff-action@a9a95522b26fe6403f7bb24031f21fb573d0f5ff # v4.9.1
+              with:
+                  version: v2.14.1
+                  config: source/cliff.toml
+                  args: --verbose --repository source --current --strip header --no-exec
+                  github_token: ${{ github.token }}
+              env:
+                  OUTPUT: release-notes.md
+                  GITHUB_REPO: ${{ github.repository }}
+            - name: Store exact-run generated notes
+              uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+              with:
+                  name: release-notes-${{ github.run_id }}-${{ github.run_attempt }}
+                  path: release-notes.md
+                  if-no-files-found: error
+                  retention-days: 1
+    update-release:
+        needs: generate-release-notes
+        runs-on: ubuntu-latest
+        timeout-minutes: 10
+        permissions:
+            actions: read
+            contents: write
+        steps:
+            - name: Checkout trusted main automation
+              uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+              with:
+                  ref: main
+                  path: automation
+                  persist-credentials: false
+            - name: Set up Bun
+              uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+              with:
+                  bun-version: 1.4.4
+            - name: Validate stable release identity
+              id: release
+              env:
+                  GH_TOKEN: ${{ github.token }}
+              run: bun automation/.github/scripts/release/identity.ts
+            - name: Checkout exact release tag
+              uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+              with:
+                  ref: ${{ steps.release.outputs.tag }}
+                  path: source
+                  fetch-depth: 0
+                  persist-credentials: false
+            - name: Download exact-run notes
+              uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+              with:
+                  name: release-notes-${{ github.run_id }}-${{ github.run_attempt }}
+                  path: release-artifact
+            - name: Preserve author notes and publish managed section
+              working-directory: source
+              env:
+                  GH_TOKEN: ${{ github.token }}
+                  NOTES_PATH: ${{ github.workspace }}/release-artifact/release-notes.md
+              run: bun "$GITHUB_WORKSPACE/automation/.github/scripts/release/update-notes.ts"

@@ -1,0 +1,5 @@
+[install]
+minimumReleaseAge = 86400
+minimumReleaseAgeExcludes = ["@rentnerkev/select", "@rentnerkev/tooltips"]
+linker = "isolated"
+globalStore = false

@@ -1,0 +1,19 @@
+{
+    "compilerOptions": {
+        "target": "ESNext",
+        "lib": ["ESNext", "DOM", "DOM.Iterable"],
+        "module": "ESNext",
+        "moduleResolution": "bundler",
+        "moduleDetection": "force",
+        "jsx": "react-jsx",
+        "strict": true,
+        "noEmit": true,
+        "skipLibCheck": true,
+        "allowImportingTsExtensions": true,
+        "allowSyntheticDefaultImports": true,
+        "esModuleInterop": true,
+        "types": ["vite/client"]
+    },
+    "include": ["src", "../src/shared", "../src/lib"],
+    "exclude": ["../src/tests", "../src/ai.ts"]
+}

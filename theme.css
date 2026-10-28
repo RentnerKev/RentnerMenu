@@ -1,0 +1,40 @@
+/* Shared RentnerKev tokens. Set --rentner-* once on :root or a scoped container. */
+@theme inline {
+    --color-rentner-control: var(
+        --rentner-control,
+        var(--color-input-dark, #22252b)
+    );
+    --color-rentner-surface: var(
+        --rentner-surface,
+        var(--color-surface-dark, #181a1f)
+    );
+    --color-rentner-foreground: var(--rentner-foreground, #ffffff);
+    --color-rentner-muted: var(
+        --rentner-muted,
+        var(--color-secondary-text, #9ca3af)
+    );
+    --color-rentner-border: var(
+        --rentner-border,
+        var(--color-border-dark, #2e323b)
+    );
+    --color-rentner-accent: var(
+        --rentner-accent,
+        var(--color-primary, #13ecd6)
+    );
+    --color-rentner-accent-hover: var(
+        --rentner-accent-hover,
+        var(--color-primary-hover, #0fbdaa)
+    );
+    --color-rentner-accent-foreground: var(
+        --rentner-accent-foreground,
+        #0f1014
+    );
+    --color-rentner-danger: var(--rentner-danger, #fb7185);
+    --color-rentner-success: var(--rentner-success, #34d399);
+    --color-rentner-warning: var(--rentner-warning, #fbbf24);
+    --color-rentner-info: var(--rentner-info, #60a5fa);
+    --radius-rentner-control: var(--rentner-radius, 0.75rem);
+    --spacing-rentner-control-sm: var(--rentner-control-sm, 2.25rem);
+    --spacing-rentner-control-md: var(--rentner-control-md, 2.75rem);
+    --spacing-rentner-control-lg: var(--rentner-control-lg, 3rem);
+}

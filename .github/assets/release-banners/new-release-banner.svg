@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="320" viewBox="0 0 1200 320" role="img" aria-labelledby="title description">
+  <title id="title">RentnerMenu</title>
+  <desc id="description">A calm menu icon on a dark teal field.</desc>
+  <defs>
+    <linearGradient id="field" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#123f46"/>
+      <stop offset="1" stop-color="#0b292f"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="320" rx="28" fill="url(#field)"/>
+  <circle cx="1050" cy="160" r="190" fill="#2b7774" opacity=".22"/>
+  <circle cx="1110" cy="45" r="94" fill="#70c4a4" opacity=".12"/>
+  <g transform="translate(88 78)" fill="none" stroke="#8ed7b5" stroke-linecap="round" stroke-width="12">
+    <path d="M0 12h62M0 45h62M0 78h62"/>
+    <circle cx="92" cy="12" r="6" fill="#8ed7b5" stroke="none"/>
+    <circle cx="92" cy="45" r="6" fill="#8ed7b5" stroke="none"/>
+    <circle cx="92" cy="78" r="6" fill="#8ed7b5" stroke="none"/>
+  </g>
+  <text x="88" y="224" fill="#f4fbf7" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="68" font-weight="700" letter-spacing="-2">RentnerMenu</text>
+  <text x="91" y="270" fill="#a9c9c4" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="22" letter-spacing="2">ACCESSIBLE NAVIGATION FOR REACT</text>
+</svg>

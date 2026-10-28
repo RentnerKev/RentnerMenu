@@ -1,0 +1,29 @@
+[install]
+minimumReleaseAge = 86400
+linker = "isolated"
+globalStore = false
+
+[test]
+root = "src/tests"
+pathIgnorePatterns = ["**/*.spec.ts", "**/types/**"]
+preload = ["./src/tests/setup.ts"]
+
+[fmt]
+semi = false
+singleQuote = true
+trailingComma = "all"
+tabWidth = 4
+useTabs = false
+printWidth = 80
+sortPackageJson = false
+ignorePatterns = [
+    "**/dist/**",
+    "**/node_modules/**",
+    "**/bun.lock",
+    "**/.env",
+    "**/.env.*",
+    "test-results/**",
+    "playwright-report/**",
+    "coverage/**",
+    "**/*.generated.*",
+]

@@ -1,0 +1,62 @@
+version: 2
+
+updates:
+    - package-ecosystem: bun
+      directory: /
+      schedule:
+          interval: daily
+          time: '03:00'
+          timezone: Europe/Berlin
+      cooldown:
+          default-days: 1
+      groups:
+          routine-updates:
+              applies-to: version-updates
+              patterns: ['*']
+              update-types: [minor, patch]
+      open-pull-requests-limit: 10
+      labels:
+          - dependencies
+          - bun
+      commit-message:
+          prefix: deps
+
+    - package-ecosystem: bun
+      directory: /playground
+      schedule:
+          interval: daily
+          time: '03:00'
+          timezone: Europe/Berlin
+      cooldown:
+          default-days: 1
+      groups:
+          routine-updates:
+              applies-to: version-updates
+              patterns: ['*']
+              update-types: [minor, patch]
+      open-pull-requests-limit: 10
+      labels:
+          - dependencies
+          - bun
+      commit-message:
+          prefix: deps
+
+    - package-ecosystem: github-actions
+      directory: /
+      schedule:
+          interval: daily
+          time: '03:00'
+          timezone: Europe/Berlin
+      cooldown:
+          default-days: 1
+      groups:
+          routine-updates:
+              applies-to: version-updates
+              patterns: ['*']
+              update-types: [minor, patch]
+      open-pull-requests-limit: 10
+      labels:
+          - dependencies
+          - github-actions
+      commit-message:
+          prefix: ci

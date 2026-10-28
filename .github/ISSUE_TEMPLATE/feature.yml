@@ -1,0 +1,17 @@
+name: Feature request
+description: Describe a menu use case that the current API does not cover.
+labels: [enhancement]
+body:
+    - type: textarea
+      id: use-case
+      attributes:
+          label: What are you trying to do?
+      validations:
+          required: true
+    - type: textarea
+      id: proposal
+      attributes:
+          label: Proposed behavior and alternatives
+          description: Explain the user interaction, keyboard behavior and any existing workaround.
+      validations:
+          required: true
