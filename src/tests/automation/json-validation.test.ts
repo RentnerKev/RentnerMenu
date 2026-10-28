@@ -41,7 +41,7 @@ const release = {
     prerelease: false,
     published_at: '2026-10-07T10:00:00Z',
     body: null,
-    assets: [{ id: 1, name: 'release-banner.svg', size: 100, digest: null }],
+    assets: [{ id: 1, name: 'release-banner.png', size: 100, digest: null }],
 }
 
 function workflow(step: string): string {

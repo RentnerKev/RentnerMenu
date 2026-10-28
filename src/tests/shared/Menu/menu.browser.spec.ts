@@ -5,7 +5,7 @@ test.beforeEach(async ({ page }) => {
     await page.goto('/')
 })
 
-test('dropdown supports keyboard selection, disabled skipping, Escape and outside dismissal', async ({
+test('action menu supports keyboard selection, disabled skipping, Escape and outside dismissal', async ({
     page,
 }) => {
     const trigger = page.getByRole('button', { name: 'Aktionen', exact: true })
@@ -20,7 +20,7 @@ test('dropdown supports keyboard selection, disabled skipping, Escape and outsid
     await expect(trigger).toBeFocused()
     await expect(page.getByRole('menu')).toHaveCount(0)
     await trigger.click()
-    await page.getByRole('heading', { name: 'Gute Menüs. Gute Wege.' }).click()
+    await page.getByText(/^Rechtsklick auf eine Datei/).click()
     await expect(page.getByRole('menu')).toHaveCount(0)
     await trigger.click()
     await page.getByRole('menuitem', { name: /Öffnen/ }).click()
@@ -43,7 +43,7 @@ test('context menu acts on its file with mouse and Shift+F10', async ({
     await page.getByRole('menuitem', { name: /Duplizieren/ }).click()
     await expect(
         page.getByRole('button', {
-            name: 'Release notes.md (copy)',
+            name: 'Release notes.md (Kopie)',
             exact: true,
         }),
     ).toBeVisible()
@@ -119,6 +119,7 @@ test('checkbox and radio choices persist across closing and opening', async ({
 test('controlled state and disabled menus follow playground controls', async ({
     page,
 }) => {
+    await page.getByText('Weitere Tests', { exact: true }).click()
     await page.getByRole('button', { name: 'Zustand umschalten' }).click()
     await expect(
         page.getByRole('button', { name: 'Gesteuertes Menü' }),
@@ -141,6 +142,7 @@ test('controlled state and disabled menus follow playground controls', async ({
 test('RTL uses reversed submenu keys and edge menu stays inside viewport', async ({
     page,
 }) => {
+    await page.getByText('Weitere Tests', { exact: true }).click()
     await page.getByRole('button', { name: 'RTL-Menü' }).click()
     await expect(page.getByRole('menu')).toHaveAttribute('dir', 'rtl')
     await page.getByRole('menuitem', { name: /Teilen/ }).focus()
@@ -164,6 +166,7 @@ test('RTL uses reversed submenu keys and edge menu stays inside viewport', async
 test('native dialog keeps menu portal in its own focus layer', async ({
     page,
 }) => {
+    await page.getByText('Weitere Tests', { exact: true }).click()
     await page.getByRole('button', { name: 'Dialog öffnen' }).click()
     const dialog = page.getByRole('dialog')
     await expect(dialog).toBeVisible()
@@ -177,15 +180,20 @@ test('native dialog keeps menu portal in its own focus layer', async ({
     await expect(dialog).not.toBeVisible()
 })
 
-test('dark, light, open menu and native dialog meet axe accessibility rules', async ({
+test('plain playground, action menu, context menu and native dialog meet axe accessibility rules', async ({
     page,
 }) => {
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([])
     await page.getByRole('button', { name: 'Aktionen', exact: true }).click()
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([])
     await page.keyboard.press('Escape')
-    await page.getByRole('button', { name: 'Light theme' }).click()
+    await page
+        .locator('[data-rentner-menu-target]')
+        .first()
+        .click({ button: 'right' })
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([])
+    await page.keyboard.press('Escape')
+    await page.getByText('Weitere Tests', { exact: true }).click()
     await page.getByRole('button', { name: 'Dialog öffnen' }).click()
     await page.getByRole('button', { name: 'Dialog-Aktionen' }).click()
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([])

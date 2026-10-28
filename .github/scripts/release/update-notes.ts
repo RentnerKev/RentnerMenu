@@ -10,7 +10,7 @@ if (isMain(import.meta.url)) {
     const selected = verifySourceCheckout()
     const notes = readNotes(requiredEnv('NOTES_PATH'))
     const banner = resolve(
-        '.github/assets/release-banners/new-release-banner.svg',
+        '.github/assets/release-banners/new-release-banner.png',
     )
     const bannerHash = `sha256:${createHash('sha256').update(readFileSync(banner)).digest('hex')}`
     const latest = api(
@@ -20,7 +20,7 @@ if (isMain(import.meta.url)) {
     if (!validRelease(latest, selected.tag))
         throw new Error('Release changed before asset upload')
     const assets = latest.assets.filter(
-        (asset) => asset.name === 'release-banner.svg',
+        (asset) => asset.name === 'release-banner.png',
     )
     if (
         assets.length > 1 ||
@@ -32,7 +32,7 @@ if (isMain(import.meta.url)) {
     if (!assets.length) {
         const uploadPath = join(
             requiredEnv('RUNNER_TEMP'),
-            'release-banner.svg',
+            'release-banner.png',
         )
         copyFileSync(banner, uploadPath)
         command('gh', [
