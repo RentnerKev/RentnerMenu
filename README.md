@@ -16,8 +16,6 @@ Accessible React action and context menus with nested submenus, keyboard navigat
 
 Requires React 19, React DOM 19, and Tailwind CSS 4. The library has no additional runtime UI dependencies.
 
-Installation from npm is available after the initial package publication. For an unpublished checkout, use the local playground below.
-
 ```bash
 npm install @rentnerkev/menu
 # or with Bun
@@ -156,11 +154,10 @@ verification, a tag-derived npm version, tests, package build and npm publicatio
 with provenance. A separate workflow generates the changelog and uploads the
 shared release banner. A push or tag alone does not publish a package.
 
-Before the first automated npm release, the package must exist on npm and its
-Trusted Publisher must authorize GitHub owner `RentnerKev`, repository
-`RentnerMenu` and workflow filename `npm-publish.yml`. This one-time npm
-configuration is separate from the GitHub workflow and requires the package
-owner's npm login. See [automation setup](.github/AUTOMATION.md).
+The npm Trusted Publisher authorizes GitHub owner `RentnerKev`, repository
+`RentnerMenu` and workflow filename `npm-publish.yml`. Releases use short-lived
+OIDC credentials without a stored npm token. See
+[automation setup](.github/AUTOMATION.md).
 
 ## License
 
