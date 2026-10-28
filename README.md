@@ -1,98 +1,138 @@
-# RentnerMenu
+<p align="center">
+    <img src="https://raw.githubusercontent.com/RentnerKev/RentnerMenu/main/assets/readme/banner.png" alt="RentnerMenu" width="100%">
+</p>
 
-Dropdown menus, right-click context menus and nested submenus for React 19.
-Built with React and browser APIs, without another runtime UI dependency.
+<p align="center">
+    <a href="https://github.com/RentnerKev/RentnerMenu/actions/workflows/ci.yml"><img src="https://github.com/RentnerKev/RentnerMenu/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI"></a>
+    <a href="https://github.com/RentnerKev/RentnerMenu/actions/workflows/codeql.yml"><img src="https://github.com/RentnerKev/RentnerMenu/actions/workflows/codeql.yml/badge.svg?branch=main" alt="CodeQL"></a>
+    <a href="https://www.npmjs.com/package/@rentnerkev/menu"><img src="https://img.shields.io/npm/v/@rentnerkev/menu" alt="npm version"></a>
+    <a href="https://www.npmjs.com/package/@rentnerkev/menu"><img src="https://img.shields.io/npm/dm/@rentnerkev/menu" alt="npm downloads"></a>
+    <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT license"></a>
+</p>
 
-This is the first, experimental `0.1.0` implementation. The source and playground
-are available for testing; an npm release is a separate, deliberate step.
+Accessible React action and context menus with nested submenus, keyboard navigation, and shared RentnerKev styling.
 
-## Try the playground
+## Installation
 
-Requires Bun 1.4.4 or newer with native `bun fmt` support.
+Requires React 19, React DOM 19, and Tailwind CSS 4. The library has no additional runtime UI dependencies.
 
-```sh
-bun install --frozen-lockfile
-bun run playground:install
-bun run playground:dev
-```
+Installation from npm is available after the initial package publication. For an unpublished checkout, use the local playground below.
 
-Open **http://127.0.0.1:4178**. The playground includes dropdown and context menus,
-nested menus, controlled checkboxes and radio items, disabled and destructive
-actions, keyboard navigation, viewport collisions, RTL and a native dialog.
-Actions only modify the playground's demo state.
-
-## Use the package
-
-After an npm release:
-
-```sh
+```bash
 npm install @rentnerkev/menu
-```
-
-```sh
+# or with Bun
 bun add @rentnerkev/menu
 ```
 
-React and React DOM 19 are peer dependencies. Import the stylesheet in your
-Tailwind CSS 4 entry:
+Import the package styles after Tailwind in your app stylesheet:
 
 ```css
 @import 'tailwindcss';
 @import '@rentnerkev/menu/tailwind.css';
 ```
 
+## Quick start
+
 ```tsx
+'use client'
+
 import { Menu, ContextMenu, type MenuItem } from '@rentnerkev/menu'
 
 const items: readonly MenuItem[] = [
-    { id: 'open', label: 'Öffnen', onSelect: () => console.log('open') },
+    { id: 'open', label: 'Open' },
     {
         id: 'export',
         type: 'submenu',
-        label: 'Exportieren',
+        label: 'Export',
         items: [
-            { id: 'pdf', label: 'Als PDF' },
-            { id: 'text', label: 'Als Text' },
+            { id: 'json', label: 'As JSON' },
+            { id: 'text', label: 'As text' },
         ],
     },
     { id: 'separator', type: 'separator' },
-    { id: 'delete', label: 'Löschen', danger: true },
+    { id: 'delete', label: 'Delete', danger: true },
 ]
 
 export function FileActions() {
     return (
         <>
-            <Menu ariaLabel="Dateiaktionen" trigger="Aktionen" items={items} />
-            <ContextMenu ariaLabel="Datei-Kontextmenü" items={items}>
-                <p>Hier rechtsklicken oder den Bereich mit Shift+F10 öffnen.</p>
+            <Menu
+                ariaLabel="File actions"
+                trigger="Actions"
+                items={items}
+                onAction={(id) => console.log(id)}
+            />
+            <ContextMenu
+                ariaLabel="File context menu"
+                items={items}
+                onAction={(id) => console.log(id)}
+            >
+                <p>Right-click this file or press Shift+F10.</p>
             </ContextMenu>
         </>
     )
 }
 ```
 
-`trigger` supplies the **contents** of the native button rendered by `Menu`.
-Do not put another button inside it. Supply button attributes and event handlers
-through `triggerProps`.
+`trigger` supplies the contents of the native button rendered by `Menu`. Pass button attributes and handlers through `triggerProps`; do not nest another button inside it.
 
-## Features and boundaries
+Action menus execute commands. Value selection in a form remains the responsibility of `@rentnerkev/select`.
 
-- Shared item model for dropdowns and context menus, including nested submenus.
-- Action, checkbox, radio, label and separator items; icons, descriptions and
-  shortcut hints. Shortcut hints are visual labels, not global hotkey bindings.
-- Arrow keys, Home/End, typeahead, Enter/Space, Escape and Tab; RTL navigation.
-- Controlled or uncontrolled open state, controlled selection, provider defaults,
-  CSS variables and slot `classNames`.
-- Explicit portal containers, viewport collision handling and focus restoration.
-- Browser, interaction, accessibility, SSR and packed-consumer verification.
+[Full API & usage](./docs/usage.md) · [Local playground](./playground) · [MIT license](./LICENSE)
 
-See [usage and API notes](docs/usage.md) for selection, styling, portals, keyboard
-behavior and integration with dialogs. An automated accessibility scan does not
-replace testing with your target assistive technology and application.
+Run the playground from the repository root:
+
+```bash
+bun install --frozen-lockfile
+bun run playground:install
+bun run playground:dev
+```
+
+Open **http://127.0.0.1:4178**. The page contains compact menu examples and the last triggered action. Controlled state, RTL, viewport collisions, disabled items and the native-dialog integration test are under **Weitere Tests**.
+
+## Features
+
+- Action and context menus share one typed item model.
+- Nested submenus open with the pointer or direction-aware keyboard navigation.
+- Checkbox and radio items, labels, separators, disabled and destructive actions.
+- Icons, descriptions and shortcut hints. Hints do not register global hotkeys.
+- Controlled or uncontrolled open state, shared providers and slot `classNames`.
+- Shared `--rentner-*` theme tokens, explicit portal containers and focus restoration.
+- Arrow keys, Home/End, typeahead, Enter/Space, Escape and Tab.
+
+## AI and read-only access
+
+The separate `@rentnerkev/menu/ai` entry is for Node.js and Bun tooling. It reads
+this installed package's manifest, README, usage guide and built TypeScript
+declarations without importing React, mounting UI or performing network requests.
+Keep it out of browser code.
+
+```ts
+import {
+    getPackageInfo,
+    getPackageApi,
+    getPackageDocumentation,
+    searchPackageDocumentation,
+    getPackageExamples,
+} from '@rentnerkev/menu/ai'
+
+const info = getPackageInfo()
+const api = getPackageApi({ symbol: 'Menu' })
+const usage = getPackageDocumentation('usage')
+const readme = getPackageDocumentation('readme')
+const matches = searchPackageDocumentation('portal')
+const examples = getPackageExamples()
+```
+
+Unknown public subpaths or symbols throw an error. Callers cannot supply file
+paths. The `./ai` entry is excluded from the UI declaration context. Use the
+documentation for the installed version.
 
 ## Development
 
-```sh
+Requires Bun 1.4.4 with native `bun fmt` support.
+
+```bash
 bun run typecheck
 bun run lint
 bun run format:check
@@ -104,13 +144,24 @@ bunx playwright install chromium firefox webkit
 bun run e2e
 ```
 
-`bun run verify` runs the complete checks after browser installation. Source lives
-under `src/shared/Menu` and `src/lib/Menu`; tests mirror those modules in
-`src/tests`. Playground code is kept separate and is excluded from npm artifacts.
+`bun run verify` runs the complete checks after browser installation. Library
+components, hooks and types live under `src/shared/Menu`, UI-free logic under
+`src/lib/Menu`, and tests mirror these modules in `src/tests`. The playground is
+excluded from the published package.
 
-GitHub automation includes CI, Dependabot, dependency auditing, CodeQL, Gitleaks,
-workflow linting and guarded release workflows. npm trusted publishing must be
-configured for this repository before its first npm release; see
-[automation setup](.github/AUTOMATION.md).
+## Releases
+
+Publishing a stable GitHub release named `vMAJOR.MINOR.PATCH` triggers exact-tag
+verification, a tag-derived npm version, tests, package build and npm publication
+with provenance. A separate workflow generates the changelog and uploads the
+shared release banner. A push or tag alone does not publish a package.
+
+Before the first automated npm release, the package must exist on npm and its
+Trusted Publisher must authorize GitHub owner `RentnerKev`, repository
+`RentnerMenu` and workflow filename `npm-publish.yml`. This one-time npm
+configuration is separate from the GitHub workflow and requires the package
+owner's npm login. See [automation setup](.github/AUTOMATION.md).
+
+## License
 
 MIT © RentnerKev

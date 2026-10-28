@@ -109,3 +109,9 @@ export interface RebaseOperations {
     comments: (number: number, page: number) => RebaseComment[]
     comment: (number: number, body: string) => void
 }
+
+export interface AutoMergeOperations {
+    verify: () => AutoMergeIdentity | undefined
+    approve: (identity: AutoMergeIdentity) => void
+    enableAutoMerge: (identity: AutoMergeIdentity) => void
+}

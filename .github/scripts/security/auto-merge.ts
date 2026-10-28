@@ -1,4 +1,7 @@
-import type { AutoMergeIdentity } from './Types/dependabot.types.ts'
+import type {
+    AutoMergeIdentity,
+    AutoMergeOperations,
+} from './Types/dependabot.types.ts'
 import { api, command, eventData, isMain } from '../lib/runtime.ts'
 import { repositoryPolicy } from '../lib/repository.ts'
 import {
@@ -76,26 +79,54 @@ function verify(): AutoMergeIdentity | undefined {
     return { repository, prNumber, head: event.head_sha }
 }
 
+export function enableVerifiedDependabotMerge(
+    operations: AutoMergeOperations,
+): boolean {
+    const initial = operations.verify()
+    if (!initial) return false
+    const matches = (
+        identity: AutoMergeIdentity | undefined,
+    ): identity is AutoMergeIdentity =>
+        identity !== undefined &&
+        identity.repository === initial.repository &&
+        identity.prNumber === initial.prNumber &&
+        identity.head === initial.head
+    const fresh = operations.verify()
+    if (!matches(fresh)) throw new Error('Dependabot provenance changed')
+    operations.approve(fresh)
+    const beforeMerge = operations.verify()
+    if (!matches(beforeMerge))
+        throw new Error('Dependabot head changed before merge')
+    operations.enableAutoMerge(beforeMerge)
+    return true
+}
+
 if (isMain(import.meta.url)) {
-    // Recheck provenance before enabling auto-merge. A human supplies the required review.
-    const initial = verify()
-    if (initial) {
-        const fresh = verify()
-        if (!fresh || fresh.head !== initial.head)
-            throw new Error('Dependabot provenance changed')
-        const beforeMerge = verify()
-        if (!beforeMerge || beforeMerge.head !== fresh.head)
-            throw new Error('Dependabot head changed before merge')
-        command('gh', [
-            'pr',
-            'merge',
-            String(fresh.prNumber),
-            '--repo',
-            fresh.repository,
-            '--auto',
-            '--squash',
-            '--match-head-commit',
-            fresh.head,
-        ])
-    }
+    enableVerifiedDependabotMerge({
+        verify,
+        approve: (identity) => {
+            api(
+                'repos/' +
+                    identity.repository +
+                    '/pulls/' +
+                    identity.prNumber +
+                    '/reviews',
+                'POST',
+                { event: 'APPROVE', commit_id: identity.head },
+            )
+        },
+        enableAutoMerge: (identity) => {
+            command('gh', [
+                'pr',
+                'merge',
+                String(identity.prNumber),
+                '--repo',
+                identity.repository,
+                '--auto',
+                '--squash',
+                '--match-head-commit',
+                identity.head,
+            ])
+        },
+    })
 }
