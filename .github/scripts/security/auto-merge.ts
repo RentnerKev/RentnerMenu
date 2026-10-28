@@ -77,17 +77,12 @@ function verify(): AutoMergeIdentity | undefined {
 }
 
 if (isMain(import.meta.url)) {
-    // Recheck every source and current head immediately before either write.
+    // Recheck provenance before enabling auto-merge. A human supplies the required review.
     const initial = verify()
     if (initial) {
         const fresh = verify()
         if (!fresh || fresh.head !== initial.head)
             throw new Error('Dependabot provenance changed')
-        api(
-            `repos/${fresh.repository}/pulls/${fresh.prNumber}/reviews`,
-            'POST',
-            { event: 'APPROVE', commit_id: fresh.head },
-        )
         const beforeMerge = verify()
         if (!beforeMerge || beforeMerge.head !== fresh.head)
             throw new Error('Dependabot head changed before merge')
