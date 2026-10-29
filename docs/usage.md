@@ -182,8 +182,10 @@ export function HoverActions() {
 
 Use `open` with `onOpenChange` for controlled hover menus. Opening through the
 keyboard transfers focus into the menu and cancels automatic hover closing;
-Escape and action selection restore trigger focus. A click-opened menu stays
-open when the mouse leaves. Hover is ignored when `modal` is true so merely
+Escape and action selection restore trigger focus. Escape from a control
+outside a hover-opened menu only dismisses the popup and preserves that
+control's focus. A click-opened menu stays open when the mouse leaves.
+Hover is ignored when `modal` is true so merely
 moving the pointer cannot block the page or its current focus. Disabled
 triggers and custom trigger handlers that call `preventDefault()` are respected.
 

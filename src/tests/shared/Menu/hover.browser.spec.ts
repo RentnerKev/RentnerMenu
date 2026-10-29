@@ -5,6 +5,20 @@ test.beforeEach(async ({ page }) => {
     await page.getByText('Weitere Tests', { exact: true }).click()
 })
 
+test('Escape dismisses a hovered menu without stealing the input focus', async ({
+    page,
+}) => {
+    const search = page.getByRole('textbox', {
+        name: 'Fokus beim Hover behalten',
+    })
+    await search.fill('Still typing')
+    await page.getByRole('button', { name: 'Hover-Menü', exact: true }).hover()
+    await expect(page.getByRole('menu')).toBeVisible()
+    await page.keyboard.press('Escape')
+    await expect(page.getByRole('menu')).toHaveCount(0)
+    await expect(search).toBeFocused()
+})
+
 test('hover opens without stealing input focus and closes after leaving the trigger', async ({
     page,
 }) => {

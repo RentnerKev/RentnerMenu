@@ -39,6 +39,60 @@ function Controlled() {
 }
 
 describe('opt-in mouse hover opening', () => {
+    test.each([false, true])(
+        'Escape works while focus remains outside and respects cancellation (%s)',
+        (cancel) => {
+            const escape = mock((event: KeyboardEvent) => {
+                if (cancel) event.preventDefault()
+            })
+            render(
+                <>
+                    <input aria-label="Search" />
+                    <Menu
+                        ariaLabel="Actions"
+                        items={items}
+                        openOnHover
+                        hoverOpenDelayMs={0}
+                        onEscapeKeyDown={escape}
+                    />
+                </>,
+            )
+            const search = screen.getByRole('textbox')
+            search.focus()
+            enter(screen.getByRole('button'))
+            fireEvent.keyDown(search, { key: 'Escape' })
+            expect(escape).toHaveBeenCalledTimes(1)
+            expect(screen.queryByRole('menu') !== null).toBe(cancel)
+            expect(document.activeElement === search).toBeTrue()
+        },
+    )
+
+    test('disabling the menu cancels a pending hover opening', async () => {
+        const changed = mock()
+        const view = render(
+            <Menu
+                ariaLabel="Actions"
+                items={items}
+                openOnHover
+                hoverOpenDelayMs={40}
+                onOpenChange={changed}
+            />,
+        )
+        enter(screen.getByRole('button'))
+        view.rerender(
+            <Menu
+                ariaLabel="Actions"
+                items={items}
+                openOnHover
+                hoverOpenDelayMs={40}
+                disabled
+                onOpenChange={changed}
+            />,
+        )
+        await pause(60)
+        expect(changed).not.toHaveBeenCalled()
+        expect(screen.queryByRole('menu') === null).toBeTrue()
+    })
     test('keeps click-only behavior by default', () => {
         render(<Menu ariaLabel="Actions" items={items} />)
         enter(screen.getByRole('button'))

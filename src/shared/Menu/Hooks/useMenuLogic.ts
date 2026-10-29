@@ -645,6 +645,18 @@ export function useMenuLogic(props: MenuCommonProps, mode: 'menu' | 'context') {
     const dismiss = useStableEvent(() =>
         requestOpen(false, Boolean(customization.modal)),
     )
+    const handleHoverEscape = useStableEvent((event: KeyboardEvent) => {
+        if (
+            event.key !== 'Escape' ||
+            event.defaultPrevented ||
+            !hover.refs.openedByHover.current
+        )
+            return
+        props.onEscapeKeyDown?.(event)
+        if (event.defaultPrevented) return
+        event.preventDefault()
+        requestOpen(false)
+    })
     const focusFirst = useStableEvent(() => {
         const level = Math.max(0, surfaces.current.size - 1)
         focusItem(level, indexes[level]?.enabled[0]?.id)
@@ -717,15 +729,17 @@ export function useMenuLogic(props: MenuCommonProps, mode: 'menu' | 'context') {
         if (!customization.modal) {
             doc.addEventListener('pointerdown', outside, true)
             doc.addEventListener('focusin', outside)
+            doc.addEventListener('keydown', handleHoverEscape)
         }
         const win = doc.defaultView
         win?.addEventListener('blur', dismiss)
         return () => {
             doc.removeEventListener('pointerdown', outside, true)
             doc.removeEventListener('focusin', outside)
+            doc.removeEventListener('keydown', handleHoverEscape)
             win?.removeEventListener('blur', dismiss)
         }
-    }, [open, customization.modal, dismiss])
+    }, [open, customization.modal, dismiss, handleHoverEscape])
     useEffect(
         () => () => {
             cancelHover()
