@@ -10,7 +10,7 @@
     <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT license"></a>
 </p>
 
-Accessible React action and context menus with nested submenus, keyboard navigation, and shared RentnerKev styling.
+Accessible React action and context menus with nested submenus and keyboard navigation.
 
 ## Installation
 
