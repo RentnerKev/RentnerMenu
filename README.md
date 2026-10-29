@@ -98,6 +98,7 @@ Open **http://127.0.0.1:4178**. The page contains compact menu examples and the 
 - Checkbox items including `checked: 'indeterminate'`, radio items, labels, separators, disabled and destructive actions.
 - Icons, descriptions and shortcut hints. Hints do not register global hotkeys.
 - Controlled or uncontrolled open state, custom button triggers with `asChild`, shared providers and slot `classNames`.
+- Opt-in mouse hover opening with configurable delays, no initial focus transfer and preserved click, touch and keyboard interaction.
 - Optional `modal` interaction blocks background input and scrolling, then restores prior background attributes and scroll styles.
 - Shared `--rentner-*` theme tokens, explicit portal containers and focus restoration.
 - Arrow keys, Home/End, repeated-character typeahead, Enter/Space, repeated Escape through submenu levels and Tab.

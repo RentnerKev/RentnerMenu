@@ -153,6 +153,40 @@ Nested providers inherit defaults; local component props take priority. Use
 and layout. `style` applies to menu content; use `triggerProps.style` for the
 trigger.
 
+## Mouse hover opening
+
+`Menu` keeps click, touch and keyboard activation by default. Since v1.0.1,
+set `openOnHover` to also open a nonmodal menu with a mouse. Hover leaves the
+currently focused control alone. `hoverOpenDelayMs` defaults to 100 and
+`hoverCloseDelayMs` to 150; the closing delay bridges the trigger-to-popup gap
+and is cancelled when the mouse enters any menu surface. Set the opening
+delay to 0 for immediate opening. Touch, pen and compatibility mouse events
+never open a menu through hover.
+
+```tsx
+import { Menu } from '@rentnerkev/menu'
+
+export function HoverActions() {
+    return (
+        <Menu
+            ariaLabel="Host actions"
+            trigger="Actions"
+            openOnHover
+            hoverOpenDelayMs={100}
+            hoverCloseDelayMs={150}
+            items={[{ id: 'edit', label: 'Edit host' }]}
+        />
+    )
+}
+```
+
+Use `open` with `onOpenChange` for controlled hover menus. Opening through the
+keyboard transfers focus into the menu and cancels automatic hover closing;
+Escape and action selection restore trigger focus. A click-opened menu stays
+open when the mouse leaves. Hover is ignored when `modal` is true so merely
+moving the pointer cannot block the page or its current focus. Disabled
+triggers and custom trigger handlers that call `preventDefault()` are respected.
+
 ## Custom button triggers
 
 By default, `trigger` supplies the contents of the native button rendered by

@@ -79,6 +79,18 @@ export function App() {
                     {state.t.moreTests}
                 </summary>
                 <div className="mt-4 flex flex-wrap items-center gap-3">
+                    <input
+                        aria-label={state.t.hoverFocus}
+                        className="rounded-md border border-border-dark bg-input-dark px-3 py-2 text-sm"
+                    />
+                    <Menu
+                        openOnHover
+                        ariaLabel={state.t.hoverMenu}
+                        trigger={state.t.hoverMenu}
+                        items={state.items}
+                        disabled={state.disabled}
+                        onAction={(id) => handler.handleAction(id)}
+                    />
                     <label className="flex items-center gap-2 text-sm">
                         <input
                             type="checkbox"

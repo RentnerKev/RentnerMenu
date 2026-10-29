@@ -63,11 +63,15 @@ export function MenuSurface({ menu, level }: MenuSurfaceProps) {
                         (menu.state.customization.portalZIndex ?? 1000) + level,
                 }}
                 onKeyDown={(event) => menu.handler.handleKeyDown(level, event)}
-                onPointerEnter={() => menu.handler.handleSurfaceEnter(level)}
+                onPointerEnter={(event) =>
+                    menu.handler.handleSurfaceEnter(level, event)
+                }
                 onPointerMove={(event) =>
                     menu.handler.handleSurfacePointerMove(level, event)
                 }
-                onPointerLeave={() => menu.handler.handleSurfaceLeave(level)}
+                onPointerLeave={(event) =>
+                    menu.handler.handleSurfaceLeave(level, event)
+                }
             >
                 {state.groups.map((group) =>
                     group.name !== undefined ? (

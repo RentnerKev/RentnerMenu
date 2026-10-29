@@ -34,6 +34,7 @@ import type {
 } from '../Types/menu.types.ts'
 import { useMenuCustomization } from './useMenuCustomization.ts'
 import { useMenuModal } from './useMenuModal.ts'
+import { useMenuHover } from './useMenuHover.ts'
 import { useStableEvent } from './useStableEvent.ts'
 
 type ItemNode = HTMLButtonElement | HTMLAnchorElement
@@ -80,6 +81,26 @@ export function useMenuLogic(props: MenuCommonProps, mode: 'menu' | 'context') {
     const suppressClick = useRef(false)
     const typeahead = useRef({ text: '', time: 0 })
     const open = (props.open ?? internalOpen) && !props.disabled
+    const hover = useMenuHover({
+        enabled:
+            mode === 'menu' &&
+            Boolean((props as MenuProps).openOnHover) &&
+            !customization.modal,
+        disabled: Boolean(props.disabled),
+        open,
+        openDelayMs: (props as MenuProps).hoverOpenDelayMs ?? 100,
+        closeDelayMs: (props as MenuProps).hoverCloseDelayMs ?? 150,
+        onOpen: () => {
+            if (
+                trigger.current instanceof HTMLButtonElement &&
+                trigger.current.disabled
+            )
+                return
+            focusRequest.current = null
+            requestOpen(true)
+        },
+        onClose: () => requestOpen(false),
+    })
     if (!open && path.length) setPath([])
     const levels = useMemo(
         () => menuLevels(props.items, path),
@@ -186,6 +207,7 @@ export function useMenuLogic(props: MenuCommonProps, mode: 'menu' | 'context') {
     }, [])
     const requestOpen = useStableEvent(
         (value: boolean, restore: boolean = false) => {
+            hover.handler.cancel()
             cancelHover()
             cancelGrace()
             pendingRestore.current = restore
@@ -208,6 +230,7 @@ export function useMenuLogic(props: MenuCommonProps, mode: 'menu' | 'context') {
             position: { x: number; y: number } | null = null,
         ) => {
             if (props.disabled) return
+            hover.handler.takeControl()
             setPoint(position)
             truncatePath(0)
             focusRequest.current = { level: 0, edge }
@@ -282,6 +305,7 @@ export function useMenuLogic(props: MenuCommonProps, mode: 'menu' | 'context') {
     const handleKeyDown = useStableEvent(
         (level: number, event: ReactKeyboardEvent<HTMLDivElement>) => {
             if (event.defaultPrevented || event.isPropagationStopped()) return
+            hover.handler.takeControl()
             const index = indexes[level]
             const current = active.current[level]
             if (event.key === 'Tab') {
@@ -459,25 +483,44 @@ export function useMenuLogic(props: MenuCommonProps, mode: 'menu' | 'context') {
             hoverItem(pending.level, pending.itemId)
         },
     )
-    const handleSurfaceEnter = useCallback(
-        (level: number) => {
+    const handleSurfaceEnter = useStableEvent(
+        (level: number, event: ReactPointerEvent<HTMLDivElement>) => {
+            if (event.pointerType === 'mouse') hover.handler.enter()
             cancelHover()
             if (grace.current && level > grace.current.level) cancelGrace()
         },
-        [cancelHover, cancelGrace],
     )
-    const handleSurfaceLeave = useCallback(
-        (level: number) => {
+    const handleSurfaceLeave = useStableEvent(
+        (level: number, event: ReactPointerEvent<HTMLDivElement>) => {
+            if (event.pointerType === 'mouse') hover.handler.leave()
             cancelHover()
             cancelGrace()
             hoverTimer.current = setTimeout(() => truncatePath(level), 300)
         },
-        [cancelHover, cancelGrace, truncatePath],
+    )
+    const handleTriggerPointerEnter = useStableEvent(
+        (event: ReactPointerEvent<HTMLButtonElement>) => {
+            ;(props as MenuProps).triggerProps?.onPointerEnter?.(event)
+            if (
+                !event.defaultPrevented &&
+                !event.currentTarget.disabled &&
+                event.pointerType === 'mouse'
+            )
+                hover.handler.enter()
+        },
+    )
+    const handleTriggerPointerLeave = useStableEvent(
+        (event: ReactPointerEvent<HTMLButtonElement>) => {
+            ;(props as MenuProps).triggerProps?.onPointerLeave?.(event)
+            if (!event.defaultPrevented && event.pointerType === 'mouse')
+                hover.handler.leave()
+        },
     )
     const handleTriggerClick = useStableEvent(
         (event: ReactMouseEvent<HTMLButtonElement>) => {
             ;(props as MenuProps).triggerProps?.onClick?.(event)
             if (event.defaultPrevented || props.disabled) return
+            hover.handler.takeControl()
             if (open) requestOpen(false, true)
             else openAt('first')
         },
@@ -629,8 +672,9 @@ export function useMenuLogic(props: MenuCommonProps, mode: 'menu' | 'context') {
             return
         }
         if (!previousOpen.current) {
-            focusRequest.current ??= { level: 0, edge: 'first' }
-            pendingRestore.current = true
+            if (!hover.refs.openedByHover.current)
+                focusRequest.current ??= { level: 0, edge: 'first' }
+            pendingRestore.current = !hover.refs.openedByHover.current
             typeahead.current = { text: '', time: 0 }
         }
         previousOpen.current = true
@@ -644,6 +688,7 @@ export function useMenuLogic(props: MenuCommonProps, mode: 'menu' | 'context') {
         cancelGrace,
         cancelPress,
         handleSurfaceReady,
+        hover.refs.openedByHover,
     ])
     useLayoutEffect(() => {
         if (!open) return
@@ -711,6 +756,8 @@ export function useMenuLogic(props: MenuCommonProps, mode: 'menu' | 'context') {
             getAnchor,
             handleTriggerClick,
             handleTriggerKeyDown,
+            handleTriggerPointerEnter,
+            handleTriggerPointerLeave,
             handleContextMenu,
             handleTargetKeyDown,
             handlePointerDown,
