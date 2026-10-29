@@ -1,15 +1,20 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { positionMenu } from '../../../lib/Menu/position.ts'
+import { groupMenuItems } from '../../../lib/Menu/navigation.ts'
 import type { MenuSurfaceProps } from '../Types/menu.internal.ts'
 import { useStableEvent } from './useStableEvent.ts'
 
+const positionEvent = 'rentner-menu-position'
+
 export function useMenuSurface({ menu, level }: MenuSurfaceProps) {
-    const surface = useRef<HTMLDivElement | null>(null)
+    const [surface, setSurfaceNode] = useState<HTMLDivElement | null>(null)
+    const lastPosition = useRef<ReturnType<typeof positionMenu> | null>(null)
     const [position, setPosition] = useState<ReturnType<
         typeof positionMenu
     > | null>(null)
     const { customization, point, path, dir } = menu.state
-    const { getAnchor, setSurface } = menu.handler
+    const items = menu.state.levels[level]
+    const groups = useMemo(() => groupMenuItems(items ?? []), [items])
     const parentId = path[level - 1]
     const parentItem = menu.state.levels[level - 1]?.find(
         (item) => item.id === parentId,
@@ -26,53 +31,78 @@ export function useMenuSurface({ menu, level }: MenuSurfaceProps) {
     const align = level ? 'start' : (customization.align ?? 'start')
     const padding = Math.max(0, customization.collisionPadding ?? 8)
     const offset = customization.sideOffset ?? 6
-    const notifyReady = useStableEvent((readyLevel: number) =>
-        menu.handler.handleSurfaceReady(readyLevel),
+    const pointX = point?.x
+    const pointY = point?.y
+    const getAnchor = useStableEvent(menu.handler.getAnchor)
+    const registerSurface = useStableEvent(menu.handler.setSurface)
+    const notifyReady = useStableEvent(menu.handler.handleSurfaceReady)
+    const setSurface = useCallback(
+        (node: HTMLDivElement | null) => {
+            setSurfaceNode(node)
+            registerSurface(level, node)
+        },
+        [level, registerSurface],
     )
-    useEffect(() => {
-        if (position) notifyReady(level)
-    }, [position, level, notifyReady])
 
-    useEffect(() => {
+    useLayoutEffect(() => {
         const anchor = getAnchor(level, parentId)
-        const element = surface.current
+        const element = surface
         const doc = element?.ownerDocument
         const win = doc?.defaultView
         if (!element || !win || !anchor) return
+        let frame: number | null = null
+        let disposed = false
+        const viewport = win.visualViewport
         function update() {
-            if (!element || !win || !anchor) return
+            if (disposed || !element || !win || !anchor) return
             const rect =
-                level === 0 && point
+                level === 0 && pointX !== undefined && pointY !== undefined
                     ? {
-                          left: point.x,
-                          right: point.x,
-                          top: point.y,
-                          bottom: point.y,
+                          left: pointX,
+                          right: pointX,
+                          top: pointY,
+                          bottom: pointY,
                           width: 0,
                           height: 0,
                       }
                     : anchor.getBoundingClientRect()
-            const viewport = win.visualViewport
-            setPosition(
-                positionMenu(
-                    rect,
-                    element.offsetWidth,
-                    element.offsetHeight,
-                    {
-                        width: viewport?.width ?? win.innerWidth,
-                        height: viewport?.height ?? win.innerHeight,
-                        left: viewport?.offsetLeft ?? 0,
-                        top: viewport?.offsetTop ?? 0,
-                    },
-                    side,
-                    align,
-                    offset,
-                    padding,
-                    dir,
-                ),
+            const next = positionMenu(
+                rect,
+                element.offsetWidth,
+                element.offsetHeight,
+                {
+                    width: viewport?.width ?? win.innerWidth,
+                    height: viewport?.height ?? win.innerHeight,
+                    left: viewport?.offsetLeft ?? 0,
+                    top: viewport?.offsetTop ?? 0,
+                },
+                side,
+                align,
+                offset,
+                padding,
+                dir,
             )
+            const previous = lastPosition.current
+            if (
+                previous &&
+                previous.left === next.left &&
+                previous.top === next.top &&
+                previous.side === next.side &&
+                previous.maxWidth === next.maxWidth &&
+                previous.maxHeight === next.maxHeight
+            )
+                return
+            lastPosition.current = next
+            setPosition(next)
         }
-        // Manual popovers enter the top layer, including when the trigger is in a modal dialog.
+        const scheduleUpdate = () => {
+            if (disposed || frame !== null) return
+            frame = win.requestAnimationFrame(() => {
+                frame = null
+                update()
+            })
+        }
+        // Manual popovers enter the top layer, including inside a modal dialog.
         const nativePopover = typeof element.showPopover === 'function'
         if (nativePopover) {
             element.setAttribute('popover', 'manual')
@@ -84,36 +114,65 @@ export function useMenuSurface({ menu, level }: MenuSurfaceProps) {
         }
         update()
         const Resize = win.ResizeObserver
-        const observer = Resize ? new Resize(update) : null
+        const observer = Resize ? new Resize(scheduleUpdate) : null
+        const parentSurface = level
+            ? anchor.closest('[data-rentner-menu-content]')
+            : null
+        // A parent's translation does not resize its submenu trigger.
+        // Re-measure after that parent has committed its new coordinates.
+        parentSurface?.addEventListener(positionEvent, update)
         observer?.observe(element)
         observer?.observe(anchor)
-        win.addEventListener('resize', update)
-        doc.addEventListener('scroll', update, true)
-        win.visualViewport?.addEventListener('resize', update)
-        win.visualViewport?.addEventListener('scroll', update)
+        win.addEventListener('resize', scheduleUpdate)
+        doc.addEventListener('scroll', scheduleUpdate, {
+            capture: true,
+            passive: true,
+        })
+        viewport?.addEventListener('resize', scheduleUpdate)
+        viewport?.addEventListener('scroll', scheduleUpdate, { passive: true })
         return () => {
+            disposed = true
+            if (frame !== null) win.cancelAnimationFrame(frame)
             observer?.disconnect()
-            win.removeEventListener('resize', update)
-            doc.removeEventListener('scroll', update, true)
-            win.visualViewport?.removeEventListener('resize', update)
-            win.visualViewport?.removeEventListener('scroll', update)
+            parentSurface?.removeEventListener(positionEvent, update)
+            win.removeEventListener('resize', scheduleUpdate)
+            doc.removeEventListener('scroll', scheduleUpdate, true)
+            viewport?.removeEventListener('resize', scheduleUpdate)
+            viewport?.removeEventListener('scroll', scheduleUpdate)
             if (nativePopover && element.hasAttribute('popover')) {
                 try {
                     element.hidePopover()
                 } catch {
                     /* Already detached or closed. */
                 }
+                element.removeAttribute('popover')
             }
         }
-    }, [parentId, point, level, side, align, offset, padding, dir, getAnchor])
+    }, [
+        surface,
+        parentId,
+        pointX,
+        pointY,
+        level,
+        side,
+        align,
+        offset,
+        padding,
+        dir,
+        getAnchor,
+    ])
+
+    // Position and visibility must commit before focus, within the same paint.
+    useLayoutEffect(() => {
+        if (surface && position) {
+            notifyReady(level)
+            const win = surface.ownerDocument.defaultView
+            if (win) surface.dispatchEvent(new win.Event(positionEvent))
+        }
+    }, [surface, position, level, notifyReady])
 
     return {
-        state: { position, surfaceLabel },
-        handler: {
-            setSurface(node: HTMLDivElement | null) {
-                surface.current = node
-                setSurface(level, node)
-            },
-        },
+        state: { position, surfaceLabel, groups },
+        handler: { setSurface },
     }
 }

@@ -2,6 +2,7 @@ import type {
     ButtonHTMLAttributes,
     CSSProperties,
     HTMLAttributes,
+    HTMLAttributeAnchorTarget,
     ReactNode,
     Ref,
 } from 'react'
@@ -29,9 +30,19 @@ export interface MenuActionItem extends MenuItemBase {
     onSelect?: (event: MenuSelectEvent) => void
 }
 
+export interface MenuLinkItem extends MenuItemBase {
+    type: 'link'
+    href: string
+    target?: HTMLAttributeAnchorTarget
+    rel?: string
+    download?: boolean | string
+    closeOnSelect?: boolean
+    onSelect?: (event: MenuSelectEvent) => void
+}
+
 export interface MenuCheckboxItem extends MenuItemBase {
     type: 'checkbox'
-    checked: boolean
+    checked: boolean | 'indeterminate'
     closeOnSelect?: boolean
     onCheckedChange: (checked: boolean) => void
 }
@@ -62,6 +73,7 @@ export interface MenuLabelItem {
 
 export type MenuItem =
     | MenuActionItem
+    | MenuLinkItem
     | MenuCheckboxItem
     | MenuRadioItem
     | MenuSubmenuItem
@@ -88,6 +100,8 @@ export interface MenuClassNames {
 }
 
 export interface MenuCustomizationProps {
+    /** Blocks background interaction and scrolling while open. Defaults to false. */
+    modal?: boolean
     dir?: MenuDirection
     controlSize?: 'sm' | 'md' | 'lg'
     side?: MenuSide
@@ -118,6 +132,8 @@ export interface MenuCommonProps extends MenuCustomizationProps {
 }
 
 export interface MenuProps extends MenuCommonProps {
+    /** Use a single custom button element as the trigger, forwarding its props/ref. */
+    asChild?: boolean
     /** Content of the native button rendered by Menu; do not pass another button. */
     trigger?: ReactNode
     triggerRef?: Ref<HTMLButtonElement>

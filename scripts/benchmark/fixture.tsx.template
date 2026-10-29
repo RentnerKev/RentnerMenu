@@ -1,0 +1,211 @@
+/* oxlint-disable no-await-in-loop -- Input steps and readiness frames must run serially to measure actual browser behavior. */
+import React from 'react'
+import { createRoot } from '__client__'
+import * as Library from '__menu__'
+
+const variant = '__variant__'
+const profiling = __profile__
+const count = window.fixtureCount ?? 25
+const items = Array.from({ length: count }, (_, index) => ({
+    id: `item-${index}`,
+    label: `Action ${String(index).padStart(4, '0')}`,
+    icon: <span>◆</span>,
+    shortcut: '⌘K',
+}))
+const decoration = (item) => (
+    <>
+        <span aria-hidden="true" data-rentner-menu-indicator>
+            <span>{item.icon}</span>
+        </span>
+        <span>
+            <span data-rentner-menu-label>{item.label}</span>
+        </span>
+        <span aria-hidden="true" data-rentner-menu-shortcut>
+            {item.shortcut}
+        </span>
+    </>
+)
+function Fixture() {
+    if (variant !== 'radix')
+        return <Library.Menu ariaLabel="Commands" items={items} loop />
+    return (
+        <Library.Root modal={false}>
+            <Library.Trigger>Commands</Library.Trigger>
+            <Library.Portal>
+                <Library.Content
+                    aria-label="Commands"
+                    sideOffset={6}
+                    collisionPadding={8}
+                    loop
+                >
+                    {items.map((item) => (
+                        <Library.Item key={item.id} data-menu-item-id={item.id}>
+                            {decoration(item)}
+                        </Library.Item>
+                    ))}
+                </Library.Content>
+            </Library.Portal>
+        </Library.Root>
+    )
+}
+createRoot(document.getElementById('root')).render(
+    profiling ? (
+        <React.Profiler
+            id="menu"
+            onRender={(_id, _phase, actualDuration) => {
+                if (tracking) {
+                    counts.commits++
+                    counts.renderMs += actualDuration
+                }
+            }}
+        >
+            <Fixture />
+        </React.Profiler>
+    ) : (
+        <Fixture />
+    ),
+)
+
+const frame = () => new Promise((resolve) => requestAnimationFrame(resolve))
+const counts = {
+    rectangles: 0,
+    widthReads: 0,
+    heightReads: 0,
+    commits: 0,
+    renderMs: 0,
+}
+let tracking = false
+const originalRect = Element.prototype.getBoundingClientRect
+Element.prototype.getBoundingClientRect = function (...args) {
+    if (tracking) counts.rectangles++
+    return originalRect.apply(this, args)
+}
+for (const [property, metric] of [
+    ['offsetWidth', 'widthReads'],
+    ['offsetHeight', 'heightReads'],
+]) {
+    const descriptor = Object.getOwnPropertyDescriptor(
+        HTMLElement.prototype,
+        property,
+    )
+    if (descriptor?.get)
+        Object.defineProperty(HTMLElement.prototype, property, {
+            ...descriptor,
+            get() {
+                if (tracking) counts[metric]++
+                return descriptor.get.call(this)
+            },
+        })
+}
+const snapshot = () => ({ ...counts })
+const difference = (start) =>
+    Object.fromEntries(
+        Object.keys(counts).map((key) => [key, counts[key] - start[key]]),
+    )
+const key = (element, value) =>
+    element.dispatchEvent(
+        new KeyboardEvent('keydown', {
+            key: value,
+            bubbles: true,
+            cancelable: true,
+        }),
+    )
+async function waitUntil(predicate) {
+    const start = performance.now()
+    while (!predicate()) {
+        if (performance.now() - start > 1500)
+            throw new Error('Menu focus readiness timed out')
+        await frame()
+    }
+}
+window.fixtureReady = () => Boolean(document.querySelector('button'))
+window.sample = async () => {
+    tracking = true
+    const trigger = document.querySelector('button')
+    trigger.focus()
+    const beforeOpen = snapshot()
+    let focusAt = null
+    let visibleAtFocus = null
+    const onFocus = (event) => {
+        if (
+            event.target.getAttribute('role') === 'menuitem' &&
+            focusAt === null
+        ) {
+            focusAt = performance.now()
+            visibleAtFocus =
+                getComputedStyle(event.target).visibility === 'visible'
+        }
+    }
+    document.addEventListener('focusin', onFocus)
+    const start = performance.now()
+    key(trigger, 'ArrowDown')
+    const openDispatchMs = performance.now() - start
+    const readyAtDispatch =
+        document.activeElement?.getAttribute('role') === 'menuitem'
+    await waitUntil(() => focusAt !== null)
+    await frame()
+    await frame()
+    document.removeEventListener('focusin', onFocus)
+    const openMeasures = difference(beforeOpen)
+    const beforeKeyboard = snapshot()
+    let keyboardDispatchMs = 0
+    for (let index = 0; index < 8; index++) {
+        const began = performance.now()
+        key(document.activeElement, 'ArrowDown')
+        keyboardDispatchMs += performance.now() - began
+        await frame()
+    }
+    const keyboardMeasures = difference(beforeKeyboard)
+    const keyboardReached =
+        document.activeElement?.getAttribute('data-menu-item-id')
+    const nodes = [...document.querySelectorAll('[role="menuitem"]')]
+    const beforeHover = snapshot()
+    let hoverDispatchMs = 0
+    let hoverFocusMatches = 0
+    for (const node of nodes.slice(0, 8)) {
+        const began = performance.now()
+        const eventOptions = {
+            bubbles: true,
+            pointerType: 'mouse',
+            clientX: 50,
+            clientY: 50,
+        }
+        node.dispatchEvent(new PointerEvent('pointerover', eventOptions))
+        node.dispatchEvent(new PointerEvent('pointermove', eventOptions))
+        hoverDispatchMs += performance.now() - began
+        await frame()
+        if (document.activeElement === node) hoverFocusMatches++
+    }
+    const hoverMeasures = difference(beforeHover)
+    const beforeBurst = snapshot()
+    const burstStart = performance.now()
+    for (let index = 0; index < 20; index++) {
+        document.dispatchEvent(new Event('scroll'))
+        window.dispatchEvent(new Event('resize'))
+    }
+    const burstDispatchMs = performance.now() - burstStart
+    await frame()
+    await frame()
+    const burstMeasures = difference(beforeBurst)
+    key(document.activeElement, 'Escape')
+    await waitUntil(() => !document.querySelector('[role="menu"]'))
+    await frame()
+    await frame()
+    tracking = false
+    return {
+        openFocusMs: focusAt - start,
+        openDispatchMs,
+        readyAtDispatch,
+        visibleAtFocus,
+        keyboardDispatchMs,
+        keyboardReached,
+        hoverDispatchMs,
+        hoverFocusMatches,
+        burstDispatchMs,
+        openMeasures,
+        keyboardMeasures,
+        hoverMeasures,
+        burstMeasures,
+        menuItems: nodes.length,
+    }
+}

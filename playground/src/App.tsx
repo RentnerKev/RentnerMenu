@@ -129,6 +129,49 @@ export function App() {
                         }}
                     />
                 </div>
+                <div className="mt-4 flex flex-wrap items-center gap-3">
+                    <Menu
+                        asChild
+                        ariaLabel={state.t.extensions}
+                        items={state.extensionItems}
+                        disabled={state.disabled}
+                        trigger={
+                            <button
+                                type="button"
+                                className="rounded-full border border-primary px-4 py-2 text-sm text-primary outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                            >
+                                {state.t.extensions}
+                            </button>
+                        }
+                    />
+                    <Menu
+                        modal
+                        ariaLabel={state.t.modalMenu}
+                        trigger={state.t.modalMenu}
+                        items={state.extensionItems}
+                        disabled={state.disabled}
+                    />
+                    <button
+                        type="button"
+                        className="rounded-md border border-border-dark px-3 py-2 text-sm"
+                        onClick={handler.handleOutsideAction}
+                    >
+                        {state.t.outsideAction}
+                    </button>
+                    <output
+                        aria-label={state.t.outsideCount}
+                        className="text-sm"
+                    >
+                        {state.t.outsideCount}: {state.outsideCount}
+                    </output>
+                </div>
+                <p
+                    id="menu-link-target"
+                    tabIndex={-1}
+                    className="mt-3 text-sm text-secondary-text"
+                >
+                    {state.t.linkTarget}
+                </p>
             </details>
             <dialog
                 ref={dialog}

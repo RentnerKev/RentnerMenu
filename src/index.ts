@@ -12,6 +12,7 @@ export type {
     MenuDirection,
     MenuItem,
     MenuLabelItem,
+    MenuLinkItem,
     MenuProps,
     MenuProviderProps,
     MenuRadioItem,

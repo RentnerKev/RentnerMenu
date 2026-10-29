@@ -18,6 +18,8 @@ export interface PlaygroundLogicResult {
         dialogContainer: HTMLDialogElement | null
         result: string
         preferences: MenuItem[]
+        extensionItems: MenuItem[]
+        outsideCount: number
         items: MenuItem[]
     }
     handler: {
@@ -28,6 +30,7 @@ export interface PlaygroundLogicResult {
         handleDialog: () => void
         handleCloseDialog: () => void
         handleToggleControlled: () => void
+        handleOutsideAction: () => void
     }
     setter: {
         setDisabled: Dispatch<SetStateAction<boolean>>

@@ -1,48 +1,54 @@
+import { memo } from 'react'
 import type { InteractiveItem } from '../../../lib/Menu/navigation.ts'
-import type { MenuItem } from '../Types/menu.types.ts'
-import type { MenuSurfaceProps } from '../Types/menu.internal.ts'
+import { useMenuEntry } from '../Hooks/useMenuEntry.ts'
+import type { MenuEntryProps } from '../Types/menu.entry.ts'
 import { MenuIndicator } from './MenuIndicator.tsx'
+
 function MenuItemContent({
     item,
-    menu,
+    menuId,
+    classNames,
+    dir,
     level,
-}: {
+}: Pick<MenuEntryProps, 'menuId' | 'classNames' | 'dir' | 'level'> & {
     item: InteractiveItem
-    menu: MenuSurfaceProps['menu']
-    level: number
 }) {
     return (
         <>
             <span
                 aria-hidden="true"
                 data-rentner-menu-indicator
-                className={`flex w-4 shrink-0 items-center justify-center text-rentner-accent ${menu.state.customization.classNames?.indicator ?? ''}`}
+                className={`flex w-4 shrink-0 items-center justify-center text-rentner-accent ${classNames?.indicator ?? ''}`}
             >
                 {(item.type === 'checkbox' || item.type === 'radio') &&
                     item.checked && (
                         <MenuIndicator
-                            kind={item.type === 'radio' ? 'radio' : 'check'}
+                            kind={
+                                item.type === 'radio'
+                                    ? 'radio'
+                                    : item.checked === 'indeterminate'
+                                      ? 'mixed'
+                                      : 'check'
+                            }
                         />
                     )}
                 {item.icon && (
-                    <span className={menu.state.customization.classNames?.icon}>
-                        {item.icon}
-                    </span>
+                    <span className={classNames?.icon}>{item.icon}</span>
                 )}
             </span>
             <span className="min-w-0 flex-1">
                 <span
-                    id={`${menu.state.id}-label-${level}-${encodeURIComponent(item.id)}`}
+                    id={`${menuId}-label-${level}-${encodeURIComponent(item.id)}`}
                     data-rentner-menu-label
-                    className={`block ${menu.state.customization.classNames?.label ?? ''}`}
+                    className={`block ${classNames?.label ?? ''}`}
                 >
                     {item.label}
                 </span>
                 {item.description && (
                     <span
-                        id={`${menu.state.id}-description-${level}-${encodeURIComponent(item.id)}`}
+                        id={`${menuId}-description-${level}-${encodeURIComponent(item.id)}`}
                         data-rentner-menu-description
-                        className={`mt-0.5 block text-xs text-rentner-muted ${menu.state.customization.classNames?.description ?? ''}`}
+                        className={`mt-0.5 block text-xs text-rentner-muted ${classNames?.description ?? ''}`}
                     >
                         {item.description}
                     </span>
@@ -52,33 +58,31 @@ function MenuItemContent({
                 <span
                     aria-hidden="true"
                     data-rentner-menu-shortcut
-                    className={`ms-5 text-xs text-rentner-muted ${menu.state.customization.classNames?.shortcut ?? ''}`}
+                    className={`ms-5 text-xs text-rentner-muted ${classNames?.shortcut ?? ''}`}
                 >
                     {item.shortcut}
                 </span>
             )}
             {item.type === 'submenu' && (
-                <MenuIndicator kind="arrow" rtl={menu.state.dir === 'rtl'} />
+                <MenuIndicator kind="arrow" rtl={dir === 'rtl'} />
             )}
         </>
     )
 }
 
-export function MenuEntry({
-    item,
-    menu,
-    level,
-}: {
-    item: MenuItem
-    menu: MenuSurfaceProps['menu']
-    level: number
-}) {
+export const MenuEntry = memo(function MenuEntry(props: MenuEntryProps) {
+    const { item, menuId, level, classNames, dir } = props
+    const {
+        state,
+        handler,
+        refs: { setNode },
+    } = useMenuEntry(props)
     if (item.type === 'separator')
         return (
             <hr
                 aria-orientation="horizontal"
                 data-rentner-menu-separator
-                className={`my-1.5 h-px border-0 bg-rentner-border ${menu.state.customization.classNames?.separator ?? ''}`}
+                className={`my-1.5 h-px border-0 bg-rentner-border ${classNames?.separator ?? ''}`}
             />
         )
     if (item.type === 'label')
@@ -86,65 +90,54 @@ export function MenuEntry({
             <div
                 role="presentation"
                 data-rentner-menu-group-label
-                className={`px-2.5 py-1.5 text-xs font-semibold text-rentner-muted ${menu.state.customization.classNames?.groupLabel ?? ''}`}
+                className={`px-2.5 py-1.5 text-xs font-semibold text-rentner-muted ${classNames?.groupLabel ?? ''}`}
             >
                 {item.label}
             </div>
         )
+    if (item.type === 'link')
+        return (
+            <a
+                {...state.attributes}
+                ref={setNode}
+                href={item.disabled ? undefined : item.href}
+                target={item.target}
+                rel={item.rel}
+                download={item.download}
+                onFocus={handler.handleFocus}
+                onPointerEnter={handler.handlePointerEnter}
+                onPointerLeave={handler.handlePointerLeave}
+                onPointerDown={handler.handlePointerDown}
+                onClick={handler.handleClick}
+                onAuxClick={handler.handleAuxClick}
+            >
+                <MenuItemContent
+                    item={item}
+                    menuId={menuId}
+                    level={level}
+                    classNames={classNames}
+                    dir={dir}
+                />
+            </a>
+        )
     return (
         <button
+            {...state.attributes}
             type="button"
-            ref={(node) => menu.handler.setItemNode(level, item.id, node)}
-            id={`${menu.state.id}-item-${level}-${encodeURIComponent(item.id)}`}
-            role={
-                item.type === 'checkbox'
-                    ? 'menuitemcheckbox'
-                    : item.type === 'radio'
-                      ? 'menuitemradio'
-                      : 'menuitem'
-            }
-            tabIndex={-1}
-            aria-labelledby={`${menu.state.id}-label-${level}-${encodeURIComponent(item.id)}`}
-            aria-describedby={
-                item.description
-                    ? `${menu.state.id}-description-${level}-${encodeURIComponent(item.id)}`
-                    : undefined
-            }
-            aria-disabled={item.disabled || undefined}
-            aria-checked={
-                item.type === 'checkbox' || item.type === 'radio'
-                    ? item.checked
-                    : undefined
-            }
-            aria-haspopup={item.type === 'submenu' ? 'menu' : undefined}
-            aria-expanded={
-                item.type === 'submenu'
-                    ? menu.state.path[level] === item.id
-                    : undefined
-            }
-            aria-controls={
-                item.type === 'submenu' && menu.state.path[level] === item.id
-                    ? `${menu.state.id}-content-${level + 1}`
-                    : undefined
-            }
-            data-menu-item-id={item.id}
-            data-rentner-menu-item=""
-            data-danger={
-                item.type === undefined || item.type === 'item'
-                    ? item.danger || undefined
-                    : undefined
-            }
-            className={`flex min-h-9 w-full cursor-default select-none items-center gap-2.5 rounded-md border-0 bg-transparent px-2.5 py-2 text-start text-inherit outline-none focus:bg-rentner-control data-[danger=true]:text-rentner-danger aria-disabled:opacity-40 ${menu.state.customization.classNames?.item ?? ''}`}
-            onFocus={() => menu.handler.handleItemFocus(level, item.id)}
-            onPointerEnter={(event) =>
-                menu.handler.handleItemEnter(level, item.id, event)
-            }
-            onClick={(event) => {
-                event.stopPropagation()
-                menu.handler.handleSelect(level, item.id, event.nativeEvent)
-            }}
+            ref={setNode}
+            onFocus={handler.handleFocus}
+            onPointerEnter={handler.handlePointerEnter}
+            onPointerLeave={handler.handlePointerLeave}
+            onPointerDown={handler.handlePointerDown}
+            onClick={handler.handleClick}
         >
-            <MenuItemContent item={item} menu={menu} level={level} />
+            <MenuItemContent
+                item={item}
+                menuId={menuId}
+                level={level}
+                classNames={classNames}
+                dir={dir}
+            />
         </button>
     )
-}
+})

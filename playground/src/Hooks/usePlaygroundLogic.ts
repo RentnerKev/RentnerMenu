@@ -14,6 +14,10 @@ export function usePlaygroundLogic(): PlaygroundLogicResult {
     const [sort, setSort] = useState('name')
     const [disabled, setDisabled] = useState(false)
     const [controlledOpen, setControlledOpen] = useState(false)
+    const [mixedSelection, setMixedSelection] = useState<
+        boolean | 'indeterminate'
+    >('indeterminate')
+    const [outsideCount, setOutsideCount] = useState(0)
     const [dialogContainer, setDialogContainer] =
         useState<HTMLDialogElement | null>(null)
     const [result, setResult] = useState(t.empty as string)
@@ -124,11 +128,36 @@ export function usePlaygroundLogic(): PlaygroundLogicResult {
             },
         },
     ]
+    const extensionItems: MenuItem[] = [
+        {
+            id: 'visit-target',
+            type: 'link',
+            label: t.visitTarget,
+            href: '#menu-link-target',
+        },
+        {
+            id: 'disabled-link',
+            type: 'link',
+            label: t.disabledLink,
+            href: '#menu-disabled-target',
+            disabled: true,
+        },
+        {
+            id: 'mixed',
+            type: 'checkbox',
+            label: t.mixedSelection,
+            checked: mixedSelection,
+            closeOnSelect: false,
+            onCheckedChange: setMixedSelection,
+        },
+    ]
     function handleReset() {
         setFiles(initialFiles)
         setSelectedId('design')
         setHidden(false)
         setSort('name')
+        setMixedSelection('indeterminate')
+        setOutsideCount(0)
         setResult(t.empty)
     }
     function handleDialog() {
@@ -146,6 +175,8 @@ export function usePlaygroundLogic(): PlaygroundLogicResult {
             dialogContainer,
             result,
             preferences,
+            extensionItems,
+            outsideCount,
             items: fileItems(),
         },
         handler: {
@@ -156,6 +187,7 @@ export function usePlaygroundLogic(): PlaygroundLogicResult {
             handleDialog,
             handleCloseDialog: () => dialog.current?.close(),
             handleToggleControlled: () => setControlledOpen((value) => !value),
+            handleOutsideAction: () => setOutsideCount((value) => value + 1),
         },
         setter: { setDisabled, setControlledOpen },
         refs: { dialog },
