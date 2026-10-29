@@ -10,7 +10,9 @@
     <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT license"></a>
 </p>
 
-Accessible React action and context menus with nested submenus and keyboard navigation.
+Accessible React action and context menus with nested submenus, native links and keyboard navigation.
+
+The v1 public contract supports React 19 with nonmodal menus by default and optional modal interaction. See the [v1 source compatibility notes](./docs/usage.md#v1-source-compatibility) when upgrading from 0.x.
 
 ## Installation
 
@@ -72,11 +74,11 @@ export function FileActions() {
 }
 ```
 
-`trigger` supplies the contents of the native button rendered by `Menu`. Pass button attributes and handlers through `triggerProps`; do not nest another button inside it.
+`trigger` supplies the contents of the native button rendered by `Menu`. Pass button attributes and handlers through `triggerProps`; do not nest another button inside it. With `asChild`, pass one button element instead; custom components must forward the injected props and ref to a native button.
 
 Action menus execute commands. Value selection in a form remains the responsibility of `@rentnerkev/select`.
 
-[Full API & usage](./docs/usage.md) · [Local playground](./playground) · [MIT license](./LICENSE)
+[Package overview](https://packages.rentner.dev/packages/menu) · [Online documentation](https://packages.rentner.dev/docs/menu) · [Repository usage guide](./docs/usage.md) · [Local playground](./playground) · [MIT license](./LICENSE)
 
 Run the playground from the repository root:
 
@@ -91,14 +93,18 @@ Open **http://127.0.0.1:4178**. The page contains compact menu examples and the 
 ## Features
 
 - Action and context menus share one typed item model.
-- Nested submenus open with the pointer or direction-aware keyboard navigation.
-- Checkbox and radio items, labels, separators, disabled and destructive actions.
+- Nested submenus open with the pointer or direction-aware keyboard navigation; pointer corridors preserve diagonal paths into a submenu.
+- Native link items with `href`, `target`, `rel` and `download`; selection cancellation preserves application control.
+- Checkbox items including `checked: 'indeterminate'`, radio items, labels, separators, disabled and destructive actions.
 - Icons, descriptions and shortcut hints. Hints do not register global hotkeys.
-- Controlled or uncontrolled open state, shared providers and slot `classNames`.
+- Controlled or uncontrolled open state, custom button triggers with `asChild`, shared providers and slot `classNames`.
+- Optional `modal` interaction blocks background input and scrolling, then restores prior background attributes and scroll styles.
 - Shared `--rentner-*` theme tokens, explicit portal containers and focus restoration.
-- Arrow keys, Home/End, typeahead, Enter/Space, Escape and Tab.
+- Arrow keys, Home/End, repeated-character typeahead, Enter/Space, repeated Escape through submenu levels and Tab.
 
 ## AI and read-only access
+
+Online entry points are available as the [AI package guide](https://packages.rentner.dev/ai/menu), the [JSON package API](https://packages.rentner.dev/api/ai/packages/menu), and the [remote MCP endpoint](https://packages.rentner.dev/mcp). The remote MCP service provides hosted package documentation to connected clients; it is separate from the local helpers below. Online information can describe a different version from the one installed in your project.
 
 The separate `@rentnerkev/menu/ai` entry is for Node.js and Bun tooling. It reads
 this installed package's manifest, README, usage guide and built TypeScript

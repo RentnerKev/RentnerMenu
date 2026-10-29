@@ -71,7 +71,7 @@
         "type": "git",
         "url": "git+https://github.com/RentnerKev/RentnerMenu.git"
     },
-    "homepage": "https://github.com/RentnerKev/RentnerMenu#readme",
+    "homepage": "https://packages.rentner.dev/packages/menu",
     "bugs": {
         "url": "https://github.com/RentnerKev/RentnerMenu/issues"
     },
