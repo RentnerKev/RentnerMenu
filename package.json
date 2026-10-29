@@ -55,6 +55,7 @@
         "typecheck:automation": "tsc --noEmit -p .github/scripts/tsconfig.json",
         "test": "bun test",
         "e2e": "playwright test",
+        "benchmark": "bun scripts/benchmark/run.ts",
         "pack:check": "bun pm pack --dry-run",
         "pack:consumer": "bun scripts/consumer/verify.ts",
         "playground:install": "bun install --cwd playground --frozen-lockfile",

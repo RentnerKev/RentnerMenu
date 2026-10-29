@@ -34,6 +34,21 @@ const items = [
         label: 'Mehr',
         items: [{ id: 'nested', label: 'Unterpunkt' }],
     },
+    {
+        id: 'docs',
+        type: 'link',
+        label: 'Dokumentation',
+        href: '/docs',
+        target: '_blank',
+        rel: 'noopener',
+    },
+    {
+        id: 'mixed',
+        type: 'checkbox',
+        label: 'Gemischt',
+        checked: 'indeterminate',
+        onCheckedChange: (_checked: boolean) => {},
+    },
     { id: 'separator', type: 'separator' },
     { id: 'heading', type: 'label', label: 'Aktionen' },
 ] satisfies readonly MenuItem[]
@@ -49,6 +64,12 @@ export function PublicApiContract() {
         <MenuProvider controlSize="sm">
             <Menu {...props} />
             <DirectMenu {...props} />
+            <Menu
+                {...props}
+                modal
+                asChild
+                trigger={<button>Eigener Trigger</button>}
+            />
             <ContextMenu ariaLabel="Kontext" items={items}>
                 <span>Datei</span>
             </ContextMenu>

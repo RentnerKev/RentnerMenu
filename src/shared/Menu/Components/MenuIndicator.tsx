@@ -2,7 +2,7 @@ export function MenuIndicator({
     kind,
     rtl = false,
 }: {
-    kind: 'check' | 'radio' | 'arrow'
+    kind: 'check' | 'radio' | 'arrow' | 'mixed'
     rtl?: boolean
 }) {
     return (
@@ -21,6 +21,14 @@ export function MenuIndicator({
                     strokeWidth="1.7"
                     strokeLinecap="round"
                     strokeLinejoin="round"
+                />
+            )}
+            {kind === 'mixed' && (
+                <path
+                    d="M4 8h8"
+                    stroke="currentColor"
+                    strokeWidth="1.7"
+                    strokeLinecap="round"
                 />
             )}
             {kind === 'radio' && (

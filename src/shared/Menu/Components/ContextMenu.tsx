@@ -7,12 +7,13 @@ import { MenuSurface } from './MenuSurface.tsx'
 
 export function ContextMenu(props: ContextMenuProps) {
     const menu = useMenuLogic(props, 'context')
+    const { setTrigger } = menu.handler
     return (
         <>
             <div
                 role="group"
                 {...props.targetProps}
-                ref={(node) => menu.handler.setTrigger(node)}
+                ref={setTrigger}
                 aria-label={
                     props.targetProps?.['aria-label'] ?? props.ariaLabel
                 }
