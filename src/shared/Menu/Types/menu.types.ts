@@ -132,6 +132,12 @@ export interface MenuCommonProps extends MenuCustomizationProps {
 }
 
 export interface MenuProps extends MenuCommonProps {
+    /** Opt into mouse hover opening for nonmodal menus without moving focus. */
+    openOnHover?: boolean
+    /** Mouse hover opening delay in milliseconds. Defaults to 100. */
+    hoverOpenDelayMs?: number
+    /** Mouse leave closing delay in milliseconds. Defaults to 150. */
+    hoverCloseDelayMs?: number
     /** Use a single custom button element as the trigger, forwarding its props/ref. */
     asChild?: boolean
     /** Content of the native button rendered by Menu; do not pass another button. */

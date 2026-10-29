@@ -51,6 +51,8 @@ export function useMenuTrigger(
     setTrigger: (node: HTMLButtonElement | null) => () => void,
     handleClick: NonNullable<TriggerProps['onClick']>,
     handleKeyDown: NonNullable<TriggerProps['onKeyDown']>,
+    handlePointerEnter: NonNullable<TriggerProps['onPointerEnter']>,
+    handlePointerLeave: NonNullable<TriggerProps['onPointerLeave']>,
 ) {
     const child =
         props.asChild && isValidElement<TriggerProps>(props.trigger)
@@ -94,6 +96,8 @@ export function useMenuTrigger(
         className: `inline-flex h-rentner-control-md items-center justify-center gap-2 rounded-rentner-control border border-rentner-border bg-rentner-control px-3 font-sans text-sm text-rentner-foreground outline-none focus-visible:ring-2 focus-visible:ring-rentner-accent disabled:cursor-not-allowed disabled:opacity-40 ${customization.classNames?.trigger ?? ''} ${props.triggerProps?.className ?? ''}`,
         onClick: handleClick,
         onKeyDown: handleKeyDown,
+        onPointerEnter: handlePointerEnter,
+        onPointerLeave: handlePointerLeave,
     }
     let customTrigger: ReactElement | undefined
     if (child) {

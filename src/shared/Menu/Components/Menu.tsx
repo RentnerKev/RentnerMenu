@@ -16,6 +16,8 @@ export function Menu(props: MenuProps) {
         menu.handler.setTrigger,
         menu.handler.handleTriggerClick,
         menu.handler.handleTriggerKeyDown,
+        menu.handler.handleTriggerPointerEnter,
+        menu.handler.handleTriggerPointerLeave,
     )
     return (
         <>

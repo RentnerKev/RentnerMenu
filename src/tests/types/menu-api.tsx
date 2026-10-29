@@ -59,6 +59,9 @@ export function PublicApiContract() {
         items,
         align: 'end',
         dir: 'rtl',
+        openOnHover: true,
+        hoverOpenDelayMs: 100,
+        hoverCloseDelayMs: 150,
     }
     return (
         <MenuProvider controlSize="sm">
