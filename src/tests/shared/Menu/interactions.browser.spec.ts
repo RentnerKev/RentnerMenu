@@ -1,6 +1,8 @@
 import { expect, test } from '@playwright/test'
 
-test.beforeEach(async ({ page }) => {
+test.beforeEach(async ({ page }, testInfo) => {
+    if (testInfo.title.startsWith('diagonal pointer travel'))
+        await page.clock.install({ time: new Date('2026-01-01T00:00:00Z') })
     await page.goto('/')
 })
 
@@ -95,6 +97,8 @@ for (const rtl of [false, true]) {
                 exact: true,
             })
             .click()
+        // Timer boundaries must measure pointer intent, not CI/automation latency.
+        await page.clock.pauseAt(new Date('2026-01-01T01:00:00Z'))
         const parent = page.getByRole('menuitem', {
             name: 'Teilen',
             exact: true,
@@ -110,6 +114,7 @@ for (const rtl of [false, true]) {
             rtl ? parentBox.x + 70 : parentBox.x + parentBox.width - 70,
             parentBox.y + parentBox.height / 2,
         )
+        await page.clock.runFor(130)
         const submenu = page.getByRole('menu').filter({
             has: page.getByRole('menuitem', {
                 name: 'Link kopieren',
@@ -122,6 +127,7 @@ for (const rtl of [false, true]) {
             element.style.minHeight = '260px'
         })
         await expect(submenu).toHaveCSS('min-height', '260px')
+        await page.clock.runFor(32)
         const sibling = page.getByRole('menuitem', {
             name: 'Löschen',
             exact: true,
@@ -133,7 +139,7 @@ for (const rtl of [false, true]) {
         await page.mouse.move(nearX, siblingBox.y + siblingBox.height / 2, {
             steps: 4,
         })
-        await page.waitForTimeout(280)
+        await page.clock.runFor(280)
         await expect(submenu).toBeVisible()
         const submenuBox = (await submenu.boundingBox())!
         await page.mouse.move(
@@ -148,6 +154,7 @@ for (const rtl of [false, true]) {
             siblingBox.y + siblingBox.height / 2,
         )
         await expect(sibling).toBeFocused()
+        await page.clock.runFor(260)
         await expect(submenu).toHaveCount(0)
     })
 }
