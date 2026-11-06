@@ -36,7 +36,7 @@ jobs:
               run: bun install --frozen-lockfile
 
             - name: Install Playwright browsers
-              run: bunx playwright install --with-deps chromium firefox webkit
+              run: bun run playwright install --with-deps chromium firefox webkit
 
             - name: Verify library
               run: bun run verify
@@ -80,7 +80,7 @@ jobs:
                   bun add --cwd playground --no-save react@${{ matrix.react-version }} react-dom@${{ matrix.react-version }}
 
             - name: Install Playwright browsers
-              run: bunx playwright install --with-deps chromium firefox webkit
+              run: bun run playwright install --with-deps chromium firefox webkit
 
             - name: Verify React compatibility
               env:
