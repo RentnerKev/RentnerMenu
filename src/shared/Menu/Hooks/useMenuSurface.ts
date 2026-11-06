@@ -50,11 +50,10 @@ export function useMenuSurface({ menu, level }: MenuSurfaceProps) {
         const doc = element?.ownerDocument
         const win = doc?.defaultView
         if (!element || !win || !anchor) return
-        let frame: number | null = null
-        let disposed = false
+        const scheduled = { frame: null as number | null, disposed: false }
         const viewport = win.visualViewport
         function update() {
-            if (disposed || !element || !win || !anchor) return
+            if (scheduled.disposed || !element || !win || !anchor) return
             const rect =
                 level === 0 && pointX !== undefined && pointY !== undefined
                     ? {
@@ -96,9 +95,9 @@ export function useMenuSurface({ menu, level }: MenuSurfaceProps) {
             setPosition(next)
         }
         const scheduleUpdate = () => {
-            if (disposed || frame !== null) return
-            frame = win.requestAnimationFrame(() => {
-                frame = null
+            if (scheduled.disposed || scheduled.frame !== null) return
+            scheduled.frame = win.requestAnimationFrame(() => {
+                scheduled.frame = null
                 update()
             })
         }
@@ -131,8 +130,9 @@ export function useMenuSurface({ menu, level }: MenuSurfaceProps) {
         viewport?.addEventListener('resize', scheduleUpdate)
         viewport?.addEventListener('scroll', scheduleUpdate, { passive: true })
         return () => {
-            disposed = true
-            if (frame !== null) win.cancelAnimationFrame(frame)
+            scheduled.disposed = true
+            if (scheduled.frame !== null)
+                win.cancelAnimationFrame(scheduled.frame)
             observer?.disconnect()
             parentSurface?.removeEventListener(positionEvent, update)
             win.removeEventListener('resize', scheduleUpdate)

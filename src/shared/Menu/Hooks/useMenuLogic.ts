@@ -273,15 +273,15 @@ export function useMenuLogic(props: MenuCommonProps, mode: 'menu' | 'context') {
                 openSubmenu(level, itemId, true)
                 return
             }
-            let prevented: boolean = false
+            const selection = { prevented: false }
             const event: MenuSelectEvent = {
                 id: item.id,
                 originalEvent,
                 get defaultPrevented() {
-                    return prevented || originalEvent.defaultPrevented
+                    return selection.prevented || originalEvent.defaultPrevented
                 },
                 preventDefault() {
-                    prevented = true
+                    selection.prevented = true
                     originalEvent.preventDefault()
                 },
             }
