@@ -68,7 +68,7 @@ jobs:
                   bun install --cwd playground --frozen-lockfile
             - name: Install Playwright browsers
               working-directory: source
-              run: bunx playwright install --with-deps chromium firefox webkit
+              run: bun run playwright install --with-deps chromium firefox webkit
             - name: Verify exact-source package
               working-directory: source
               run: bun run verify
