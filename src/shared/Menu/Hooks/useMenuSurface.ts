@@ -15,6 +15,12 @@ export function useMenuSurface({ menu, level }: MenuSurfaceProps) {
     const { customization, point, path, dir } = menu.state
     const items = menu.state.levels[level]
     const groups = useMemo(() => groupMenuItems(items ?? []), [items])
+    const reserveIcon =
+        items?.some((item) => 'icon' in item && Boolean(item.icon)) ?? false
+    const reserveIndicator =
+        items?.some(
+            (item) => item.type === 'checkbox' || item.type === 'radio',
+        ) ?? false
     const parentId = path[level - 1]
     const parentItem = menu.state.levels[level - 1]?.find(
         (item) => item.id === parentId,
@@ -27,7 +33,8 @@ export function useMenuSurface({ menu, level }: MenuSurfaceProps) {
         ? dir === 'rtl'
             ? 'left'
             : 'right'
-        : (customization.side ?? 'bottom')
+        : (customization.side ??
+          (point ? (dir === 'rtl' ? 'left' : 'right') : 'bottom'))
     const align = level ? 'start' : (customization.align ?? 'start')
     const padding = Math.max(0, customization.collisionPadding ?? 8)
     const offset = customization.sideOffset ?? 6
@@ -172,7 +179,13 @@ export function useMenuSurface({ menu, level }: MenuSurfaceProps) {
     }, [surface, position, level, notifyReady])
 
     return {
-        state: { position, surfaceLabel, groups },
+        state: {
+            position,
+            surfaceLabel,
+            groups,
+            reserveIcon,
+            reserveIndicator,
+        },
         handler: { setSurface },
     }
 }

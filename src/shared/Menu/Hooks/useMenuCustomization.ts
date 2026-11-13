@@ -1,14 +1,28 @@
 import { createContext, useContext, useMemo } from 'react'
-import type { MenuCustomizationProps } from '../Types/menu.types.ts'
+import type { MenuCustomizationContextValue } from '../Types/menu.internal.ts'
 
-export const MenuCustomizationContext = createContext<MenuCustomizationProps>(
-    {},
-)
+export const MenuCustomizationContext =
+    createContext<MenuCustomizationContextValue>({})
 
 export function useMenuCustomization(
-    props: MenuCustomizationProps,
-): MenuCustomizationProps {
+    props: MenuCustomizationContextValue,
+    mode?: 'menu' | 'context',
+): MenuCustomizationContextValue {
     const inherited = useContext(MenuCustomizationContext)
+    const positioning =
+        mode === 'menu'
+            ? inherited.menu
+            : mode === 'context'
+              ? inherited.contextMenu
+              : undefined
+    const menu = useMemo(
+        () => ({ ...inherited.menu, ...props.menu }),
+        [inherited.menu, props.menu],
+    )
+    const contextMenu = useMemo(
+        () => ({ ...inherited.contextMenu, ...props.contextMenu }),
+        [inherited.contextMenu, props.contextMenu],
+    )
     const classNames = useMemo(
         () => ({ ...inherited.classNames, ...props.classNames }),
         [inherited.classNames, props.classNames],
@@ -22,11 +36,16 @@ export function useMenuCustomization(
             modal: props.modal ?? inherited.modal,
             dir: props.dir ?? inherited.dir,
             controlSize: props.controlSize ?? inherited.controlSize,
-            side: props.side ?? inherited.side,
-            align: props.align ?? inherited.align,
-            sideOffset: props.sideOffset ?? inherited.sideOffset,
+            side: props.side ?? positioning?.side ?? inherited.side,
+            align: props.align ?? positioning?.align ?? inherited.align,
+            sideOffset:
+                props.sideOffset ??
+                positioning?.sideOffset ??
+                inherited.sideOffset,
             collisionPadding:
-                props.collisionPadding ?? inherited.collisionPadding,
+                props.collisionPadding ??
+                positioning?.collisionPadding ??
+                inherited.collisionPadding,
             loop: props.loop ?? inherited.loop,
             portalContainer:
                 props.portalContainer === undefined
@@ -35,6 +54,8 @@ export function useMenuCustomization(
             portalZIndex: props.portalZIndex ?? inherited.portalZIndex,
             classNames,
             style,
+            menu,
+            contextMenu,
         }),
         [
             props.modal,
@@ -51,6 +72,7 @@ export function useMenuCustomization(
             inherited.sideOffset,
             props.collisionPadding,
             inherited.collisionPadding,
+            positioning,
             props.loop,
             inherited.loop,
             props.portalContainer,
@@ -59,6 +81,8 @@ export function useMenuCustomization(
             inherited.portalZIndex,
             classNames,
             style,
+            menu,
+            contextMenu,
         ],
     )
 }

@@ -88,7 +88,7 @@ bun run playground:install
 bun run playground:dev
 ```
 
-Open **http://127.0.0.1:4178**. The page contains compact menu examples and the last triggered action. Controlled state, RTL, viewport collisions, disabled items and the native-dialog integration test are under **Weitere Tests**.
+Open **http://127.0.0.1:4178**. The page contains compact menu examples and the last triggered action. Controlled state, RTL, viewport collisions, disabled items and the native-dialog integration test are under **Weitere Tests**. **Kontextmenü-Tests** demonstrates shared dropdown/context positioning defaults, native target actions and independent styling slots.
 
 ## Features
 

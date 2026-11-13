@@ -8,6 +8,9 @@ export interface MenuEntryProps {
     dir: MenuDirection
     classNames: MenuClassNames | undefined
     expanded: boolean
+    /** Reserve the same icon and selection columns throughout a menu level. */
+    reserveIndicator?: boolean
+    reserveIcon?: boolean
     setItemNode: (
         level: number,
         id: string,
