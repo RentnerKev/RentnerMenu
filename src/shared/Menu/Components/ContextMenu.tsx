@@ -36,6 +36,7 @@ export function ContextMenu(props: ContextMenuProps) {
                 onPointerUp={menu.handler.handlePointerUp}
                 onPointerCancel={menu.handler.handlePointerCancel}
                 onClick={menu.handler.handleTargetClick}
+                onClickCapture={menu.handler.handleTargetClickCapture}
             >
                 {props.children}
             </div>

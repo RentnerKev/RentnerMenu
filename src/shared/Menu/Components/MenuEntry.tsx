@@ -10,30 +10,54 @@ function MenuItemContent({
     classNames,
     dir,
     level,
-}: Pick<MenuEntryProps, 'menuId' | 'classNames' | 'dir' | 'level'> & {
+    reserveIcon,
+    reserveIndicator,
+}: Pick<
+    MenuEntryProps,
+    | 'menuId'
+    | 'classNames'
+    | 'dir'
+    | 'level'
+    | 'reserveIcon'
+    | 'reserveIndicator'
+> & {
     item: InteractiveItem
 }) {
     return (
         <>
             <span
                 aria-hidden="true"
-                data-rentner-menu-indicator
-                className={`flex w-4 shrink-0 items-center justify-center text-rentner-accent ${classNames?.indicator ?? ''}`}
+                data-rentner-menu-leading
+                className="flex min-w-4 shrink-0 items-center justify-center gap-1"
             >
-                {(item.type === 'checkbox' || item.type === 'radio') &&
-                    item.checked && (
-                        <MenuIndicator
-                            kind={
-                                item.type === 'radio'
-                                    ? 'radio'
-                                    : item.checked === 'indeterminate'
-                                      ? 'mixed'
-                                      : 'check'
-                            }
-                        />
-                    )}
-                {item.icon && (
-                    <span className={classNames?.icon}>{item.icon}</span>
+                {(reserveIndicator ||
+                    item.type === 'checkbox' ||
+                    item.type === 'radio') && (
+                    <span
+                        data-rentner-menu-indicator
+                        className={`flex w-4 shrink-0 items-center justify-center text-rentner-accent ${classNames?.indicator ?? ''}`}
+                    >
+                        {(item.type === 'checkbox' || item.type === 'radio') &&
+                            item.checked && (
+                                <MenuIndicator
+                                    kind={
+                                        item.type === 'radio'
+                                            ? 'radio'
+                                            : item.checked === 'indeterminate'
+                                              ? 'mixed'
+                                              : 'check'
+                                    }
+                                />
+                            )}
+                    </span>
+                )}
+                {(reserveIcon || item.icon) && (
+                    <span
+                        data-rentner-menu-icon
+                        className={`flex w-4 shrink-0 items-center justify-center ${classNames?.icon ?? ''}`}
+                    >
+                        {item.icon}
+                    </span>
                 )}
             </span>
             <span className="min-w-0 flex-1">
@@ -64,14 +88,28 @@ function MenuItemContent({
                 </span>
             )}
             {item.type === 'submenu' && (
-                <MenuIndicator kind="arrow" rtl={dir === 'rtl'} />
+                <span
+                    aria-hidden="true"
+                    data-rentner-menu-submenu-indicator
+                    className={`flex shrink-0 ${classNames?.submenuIndicator ?? ''}`}
+                >
+                    <MenuIndicator kind="arrow" rtl={dir === 'rtl'} />
+                </span>
             )}
         </>
     )
 }
 
 export const MenuEntry = memo(function MenuEntry(props: MenuEntryProps) {
-    const { item, menuId, level, classNames, dir } = props
+    const {
+        item,
+        menuId,
+        level,
+        classNames,
+        dir,
+        reserveIcon,
+        reserveIndicator,
+    } = props
     const {
         state,
         handler,
@@ -117,6 +155,8 @@ export const MenuEntry = memo(function MenuEntry(props: MenuEntryProps) {
                     level={level}
                     classNames={classNames}
                     dir={dir}
+                    reserveIcon={reserveIcon}
+                    reserveIndicator={reserveIndicator}
                 />
             </a>
         )
@@ -137,6 +177,8 @@ export const MenuEntry = memo(function MenuEntry(props: MenuEntryProps) {
                 level={level}
                 classNames={classNames}
                 dir={dir}
+                reserveIcon={reserveIcon}
+                reserveIndicator={reserveIndicator}
             />
         </button>
     )

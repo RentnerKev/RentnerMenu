@@ -45,7 +45,7 @@ function assignRef<T>(ref: Ref<T> | undefined, value: T | null) {
 }
 
 export function useMenuLogic(props: MenuCommonProps, mode: 'menu' | 'context') {
-    const customization = useMenuCustomization(props)
+    const customization = useMenuCustomization(props, mode)
     const reactId = useId()
     const id = props.id ?? `rentner-menu-${reactId}`
     const [internalOpen, setInternalOpen] = useState(props.defaultOpen ?? false)
@@ -596,14 +596,21 @@ export function useMenuLogic(props: MenuCommonProps, mode: 'menu' | 'context') {
                 cancelPress()
         },
     )
-    const handleTargetClick = useStableEvent(
+    const handleTargetClickCapture = useStableEvent(
         (event: ReactMouseEvent<HTMLDivElement>) => {
+            ;(props as ContextMenuProps).targetProps?.onClickCapture?.(event)
             if (suppressClick.current) {
                 suppressClick.current = false
-                event.preventDefault()
-                event.stopPropagation()
-                return
+                // Keyboard/assistive activation is unrelated to a touch compatibility click.
+                if (event.detail > 0) {
+                    event.preventDefault()
+                    event.stopPropagation()
+                }
             }
+        },
+    )
+    const handleTargetClick = useStableEvent(
+        (event: ReactMouseEvent<HTMLDivElement>) => {
             ;(props as ContextMenuProps).targetProps?.onClick?.(event)
         },
     )
@@ -718,7 +725,8 @@ export function useMenuLogic(props: MenuCommonProps, mode: 'menu' | 'context') {
         function outside(event: Event) {
             const nodes = event.composedPath()
             if (
-                nodes.includes(trigger.current as EventTarget) ||
+                (mode === 'menu' &&
+                    nodes.includes(trigger.current as EventTarget)) ||
                 [...surfaces.current.values()].some((surface) =>
                     nodes.includes(surface),
                 )
@@ -739,7 +747,7 @@ export function useMenuLogic(props: MenuCommonProps, mode: 'menu' | 'context') {
             doc.removeEventListener('keydown', handleHoverEscape)
             win?.removeEventListener('blur', dismiss)
         }
-    }, [open, customization.modal, dismiss, handleHoverEscape])
+    }, [open, mode, customization.modal, dismiss, handleHoverEscape])
     useEffect(
         () => () => {
             cancelHover()
@@ -777,6 +785,7 @@ export function useMenuLogic(props: MenuCommonProps, mode: 'menu' | 'context') {
             handlePointerDown,
             handlePointerMove,
             handleTargetClick,
+            handleTargetClickCapture,
             handlePointerUp,
             handlePointerCancel,
             handleKeyDown,

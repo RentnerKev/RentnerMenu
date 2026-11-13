@@ -95,28 +95,49 @@ export interface MenuClassNames {
     description?: string
     shortcut?: string
     indicator?: string
+    /** Styles the submenu arrow independently from icons and selection indicators. */
+    submenuIndicator?: string
     separator?: string
     groupLabel?: string
 }
 
-export interface MenuCustomizationProps {
-    /** Blocks background interaction and scrolling while open. Defaults to false. */
-    modal?: boolean
-    dir?: MenuDirection
-    controlSize?: 'sm' | 'md' | 'lg'
+export interface MenuPositioningProps {
     side?: MenuSide
     align?: MenuAlign
     sideOffset?: number
     collisionPadding?: number
+}
+
+export interface MenuStyle extends CSSProperties {
+    '--rentner-menu-content-min-width'?: string
+    '--rentner-menu-content-padding'?: string
+    '--rentner-menu-content-radius'?: string
+    '--rentner-menu-content-border-width'?: string
+    '--rentner-menu-item-min-height'?: string
+    '--rentner-menu-item-padding-x'?: string
+    '--rentner-menu-item-padding-y'?: string
+    '--rentner-menu-item-radius'?: string
+    '--rentner-menu-item-gap'?: string
+}
+
+export interface MenuCustomizationProps extends MenuPositioningProps {
+    /** Blocks background interaction and scrolling while open. Defaults to false. */
+    modal?: boolean
+    dir?: MenuDirection
+    controlSize?: 'sm' | 'md' | 'lg'
     loop?: boolean
     portalContainer?: Element | DocumentFragment | null
     portalZIndex?: number
     classNames?: MenuClassNames
-    style?: CSSProperties
+    style?: MenuStyle
 }
 
 export interface MenuProviderProps extends MenuCustomizationProps {
     children: ReactNode
+    /** Positioning defaults for dropdowns; local menu props take precedence. */
+    menu?: MenuPositioningProps
+    /** Positioning defaults for context menus; shared provider props still inherit. */
+    contextMenu?: MenuPositioningProps
 }
 
 export interface MenuCommonProps extends MenuCustomizationProps {

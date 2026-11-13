@@ -14,10 +14,12 @@ export type {
     MenuLabelItem,
     MenuLinkItem,
     MenuProps,
+    MenuPositioningProps,
     MenuProviderProps,
     MenuRadioItem,
     MenuSelectEvent,
     MenuSeparatorItem,
     MenuSide,
+    MenuStyle,
     MenuSubmenuItem,
 } from './shared/Menu/Types/menu.types.ts'

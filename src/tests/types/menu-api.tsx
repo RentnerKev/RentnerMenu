@@ -4,6 +4,8 @@ import {
     MenuProvider,
     type MenuItem,
     type MenuProps,
+    type MenuPositioningProps,
+    type MenuStyle,
 } from '../../index.ts'
 import { Menu as DirectMenu } from '../../shared/Menu/Components/Menu.tsx'
 
@@ -54,6 +56,11 @@ const items = [
 ] satisfies readonly MenuItem[]
 
 export function PublicApiContract() {
+    const contextMenu: MenuPositioningProps = { align: 'start', sideOffset: 8 }
+    const style: MenuStyle = {
+        '--rentner-menu-content-padding': '0.5rem',
+        '--rentner-menu-item-radius': '0.25rem',
+    }
     const props: MenuProps = {
         ariaLabel: 'Aktionen',
         items,
@@ -64,7 +71,13 @@ export function PublicApiContract() {
         hoverCloseDelayMs: 150,
     }
     return (
-        <MenuProvider controlSize="sm">
+        <MenuProvider
+            controlSize="sm"
+            menu={{ align: 'end' }}
+            contextMenu={contextMenu}
+            classNames={{ submenuIndicator: 'text-inherit' }}
+            style={style}
+        >
             <Menu {...props} />
             <DirectMenu {...props} />
             <Menu

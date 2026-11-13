@@ -99,7 +99,7 @@ export function useMenuEntry({
             item.type === undefined || item.type === 'item'
                 ? item.danger || undefined
                 : undefined,
-        className: `flex min-h-9 w-full cursor-default select-none items-center gap-2.5 rounded-md border-0 bg-transparent px-2.5 py-2 text-start text-inherit no-underline outline-none focus:bg-rentner-control data-[danger=true]:text-rentner-danger aria-disabled:opacity-40 ${classNames?.item ?? ''}`,
+        className: `flex min-h-[var(--rentner-menu-item-min-height,var(--rentner-menu-size-item-min-height,2.25rem))] w-full cursor-default select-none items-center gap-[var(--rentner-menu-item-gap,0.625rem)] rounded-[var(--rentner-menu-item-radius,0.375rem)] border-0 bg-transparent px-[var(--rentner-menu-item-padding-x,0.625rem)] py-[var(--rentner-menu-item-padding-y,var(--rentner-menu-size-item-padding-y,0.5rem))] text-start text-inherit no-underline outline-none focus:bg-rentner-control data-[danger=true]:text-rentner-danger aria-disabled:opacity-40 ${classNames?.item ?? ''}`,
     }
     return {
         state: { attributes },

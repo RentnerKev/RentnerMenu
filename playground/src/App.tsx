@@ -1,6 +1,7 @@
 import { Menu } from '../../src/shared/Menu/Components/Menu.tsx'
 import { ContextMenu } from '../../src/shared/Menu/Components/ContextMenu.tsx'
 import { usePlaygroundLogic } from './Hooks/usePlaygroundLogic.ts'
+import { ContextMenuRegression } from './Components/ContextMenuRegression.tsx'
 
 export function App() {
     const {
@@ -185,6 +186,7 @@ export function App() {
                     {state.t.linkTarget}
                 </p>
             </details>
+            <ContextMenuRegression />
             <dialog
                 ref={dialog}
                 aria-label={state.t.dialogTitle}

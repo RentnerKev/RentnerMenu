@@ -270,6 +270,90 @@ React parent. Put shared tokens on `:root`, or pass a themed `portalContainer`.
 Runtime positioning uses inline styles; a CSP must permit your application's
 chosen dynamic styling approach. No remote font or external asset is required.
 
+### Independent slots
+
+`classNames.icon`, `classNames.indicator` and `classNames.submenuIndicator`
+style action icons, checkbox/radio selection marks and submenu arrows separately.
+Icons inherit the action's text color by default; selection marks keep the accent
+color. An item can display both an icon and a selection mark without nesting one
+color-bearing slot inside the other. Each retains its own space, including the
+empty mark of an unchecked checkbox or radio. Application-specific action colors
+belong in the application.
+
+All existing `classNames` keys remain supported. The `indicator` slot now applies
+only to checkbox/radio marks; to preserve an older icon treatment, also supply
+`classNames.icon`. Custom selectors that targeted icons through
+`[data-rentner-menu-indicator]` should use `[data-rentner-menu-icon]` instead.
+Submenu arrows expose `[data-rentner-menu-submenu-indicator]`.
+
+### Design tokens
+
+Appending conflicting Tailwind utilities does not guarantee which utility wins.
+Use these CSS custom properties for predictable spacing, radius and border
+changes, without important utilities or an additional merge dependency:
+
+| Token                                 | Default                                      |
+| ------------------------------------- | -------------------------------------------- |
+| `--rentner-menu-content-min-width`    | `12rem`                                      |
+| `--rentner-menu-content-padding`      | `0.375rem`                                   |
+| `--rentner-menu-content-radius`       | `--rentner-radius`, or `0.75rem`             |
+| `--rentner-menu-content-border-width` | `1px`                                        |
+| `--rentner-menu-item-min-height`      | `2.25rem`; `sm`: `1.875rem`, `lg`: `2.75rem` |
+| `--rentner-menu-item-padding-x`       | `0.625rem`                                   |
+| `--rentner-menu-item-padding-y`       | `0.5rem`; `sm`: `0.375rem`, `lg`: `0.625rem` |
+| `--rentner-menu-item-radius`          | `0.375rem`                                   |
+| `--rentner-menu-item-gap`             | `0.625rem`                                   |
+
+Pass the typed `MenuStyle` through `style` on a component or provider, or set
+tokens with Tailwind arbitrary properties on `classNames.content`:
+
+```tsx
+<MenuProvider
+    style={{
+        '--rentner-menu-content-padding': '0.5rem',
+        '--rentner-menu-content-radius': '1rem',
+        '--rentner-menu-content-border-width': '0px',
+        '--rentner-menu-item-padding-y': '0.375rem',
+    }}
+>
+    <Menu ariaLabel="Actions" items={items} />
+</MenuProvider>
+```
+
+Explicit item tokens take precedence over `controlSize` defaults. Tokens follow
+the same DOM inheritance and portal-container rules as the shared color tokens.
+Forced-colors mode retains a visible system-color border for accessibility.
+
+## Positioning defaults
+
+Dropdowns and keyboard-opened context menus default to `side="bottom"` and
+`align="start"`, anchored to the trigger/target rectangle. A pointer-opened
+context menu uses the click or long-press coordinates and defaults to the right
+in LTR, the left in RTL, with its top aligned to the point. The default offset is
+6 pixels. Every mode flips to the opposite side when more space is available
+and clamps to the viewport with `collisionPadding` (default: 8 pixels).
+
+`MenuProvider` accepts separate positioning-only `menu` and `contextMenu`
+defaults. Each supports `side`, `align`, `sideOffset` and `collisionPadding`;
+`MenuPositioningProps` is exported for shared configuration:
+
+```tsx
+<MenuProvider align="end" contextMenu={{ align: 'start', sideOffset: 8 }}>
+    <Menu ariaLabel="Actions" items={items} />
+    <ContextMenu ariaLabel="Message actions" items={items}>
+        <article>Right-click this message.</article>
+    </ContextMenu>
+</MenuProvider>
+```
+
+Precedence, per property: local component props, menu-type defaults, shared
+provider props, built-in defaults. Nested providers merge menu-type defaults per
+property. Existing shared provider positioning still applies to both components;
+for example, an existing `align="end"` also affects context menus until overridden
+with `contextMenu={{ align: 'start' }}`. An explicit `side` is a physical side and
+is not mirrored in RTL. Keyboard opening always uses the target rectangle;
+explicit/provider positioning applies to both pointer and keyboard opening.
+
 ## Keyboard, pointer and context menus
 
 Menu buttons open with Enter, Space or ArrowDown; ArrowUp starts at the last
@@ -294,6 +378,15 @@ at either edge.
 `ContextMenu` opens on a native `contextmenu` event or Shift+F10/ContextMenu key
 while its target has focus. Set `longPress` for a stationary touch press. An
 explicit visible menu button remains useful for discoverability on touch devices.
+
+In nonmodal mode, a pointer or focus transition outside the open menu surfaces
+also dismisses a context menu when it lands inside its original target. The
+destination's native action and focus continue normally. A right-click can reopen
+or reposition the appropriate context menu. Dropdown buttons retain their toggle
+behavior, including dropdowns embedded in a context target. A long press suppresses
+its following compatibility click before a descendant action can run; subsequent
+taps behave normally. Controlled consumers receive close requests through
+`onOpenChange` and must accept them to close the menu.
 
 ## Dialogs and portals
 

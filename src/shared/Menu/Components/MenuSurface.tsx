@@ -48,7 +48,7 @@ export function MenuSurface({ menu, level }: MenuSurfaceProps) {
                 data-rentner-menu-content=""
                 data-side={state.position?.side}
                 data-size={menu.state.customization.controlSize ?? 'md'}
-                className={`pointer-events-auto m-0 min-w-48 overflow-y-auto overscroll-contain rounded-rentner-control border border-rentner-border bg-rentner-surface p-1.5 font-sans text-sm text-rentner-foreground shadow-xl outline-none ${menu.state.customization.classNames?.content ?? ''}`}
+                className={`pointer-events-auto m-0 min-w-[var(--rentner-menu-content-min-width,12rem)] overflow-y-auto overscroll-contain rounded-[var(--rentner-menu-content-radius,var(--rentner-radius,0.75rem))] border-[length:var(--rentner-menu-content-border-width,1px)] border-rentner-border bg-rentner-surface p-[var(--rentner-menu-content-padding,0.375rem)] font-sans text-sm text-rentner-foreground shadow-xl outline-none ${menu.state.customization.classNames?.content ?? ''}`}
                 style={{
                     ...menu.state.customization.style,
                     position: 'fixed',
@@ -104,6 +104,8 @@ export function MenuSurface({ menu, level }: MenuSurfaceProps) {
                                         menu.handler.handleItemLeave
                                     }
                                     level={level}
+                                    reserveIcon={state.reserveIcon}
+                                    reserveIndicator={state.reserveIndicator}
                                 />
                             ))}
                         </fieldset>
@@ -123,6 +125,8 @@ export function MenuSurface({ menu, level }: MenuSurfaceProps) {
                             handleSelect={menu.handler.handleSelect}
                             handleItemLeave={menu.handler.handleItemLeave}
                             level={level}
+                            reserveIcon={state.reserveIcon}
+                            reserveIndicator={state.reserveIndicator}
                         />
                     ),
                 )}
