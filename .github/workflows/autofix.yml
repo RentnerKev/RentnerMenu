@@ -47,6 +47,13 @@ jobs:
                     ':(glob,exclude)**/*.gen.*' ':(glob,exclude)**/*.generated.*' \
                     ':(glob,exclude)**/test-results/**' ':(glob,exclude)**/playwright-report/**' \
                     ':(glob,exclude)**/coverage/**' \
+                    | while IFS= read -r -d '' path; do
+                        case "$path" in
+                          *.js|*.jsx|*.mjs|*.cjs|*.ts|*.tsx|*.mts|*.cts|*.json|*.jsonc|*.css|*.html|*.yaml|*.yml|*.toml|*.md|*.mdx)
+                            printf '%s\0' "$path"
+                            ;;
+                        esac
+                      done \
                     | tee "$RUNNER_TEMP/autofix-allowed-paths" \
                     | xargs -0 -r bun --no-env-file fmt --no-script
 
