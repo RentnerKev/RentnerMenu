@@ -5,6 +5,7 @@
 <p align="center">
     <a href="https://github.com/RentnerKev/RentnerMenu/actions/workflows/ci.yml"><img src="https://github.com/RentnerKev/RentnerMenu/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI"></a>
     <a href="https://github.com/RentnerKev/RentnerMenu/actions/workflows/codeql.yml"><img src="https://github.com/RentnerKev/RentnerMenu/actions/workflows/codeql.yml/badge.svg?branch=main" alt="CodeQL"></a>
+    <a href="https://scorecard.dev/viewer/?uri=github.com/RentnerKev/RentnerMenu"><img src="https://api.scorecard.dev/projects/github.com/RentnerKev/RentnerMenu/badge" alt="OpenSSF Scorecard"></a>
     <a href="https://www.npmjs.com/package/@rentnerkev/menu"><img src="https://img.shields.io/npm/v/@rentnerkev/menu" alt="npm version"></a>
     <a href="https://www.npmjs.com/package/@rentnerkev/menu"><img src="https://img.shields.io/npm/dm/@rentnerkev/menu" alt="npm downloads"></a>
     <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT license"></a>
@@ -169,3 +170,7 @@ OIDC credentials without a stored npm token. See
 ## License
 
 MIT © RentnerKev
+
+## Community
+
+See [Contributing](.github/CONTRIBUTING.md), the [Code of Conduct](.github/CODE_OF_CONDUCT.md), [Support](.github/SUPPORT.md), and the [Security Policy](SECURITY.md).

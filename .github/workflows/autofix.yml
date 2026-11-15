@@ -1,0 +1,67 @@
+name: autofix.ci
+
+on:
+    pull_request:
+    push:
+        branches: [main]
+
+permissions:
+    contents: read
+
+concurrency:
+    group: autofix-${{ github.event.pull_request.number || github.ref }}
+    cancel-in-progress: true
+
+jobs:
+    autofix:
+        runs-on: ubuntu-latest
+        timeout-minutes: 10
+        steps:
+            - name: Checkout
+              uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+              with:
+                  persist-credentials: false
+
+            - name: Set up Bun
+              uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+              with:
+                  bun-version: 1.4.4
+
+            - name: Install locked dependencies without lifecycle scripts
+              run: bun --no-env-file install --frozen-lockfile --ignore-scripts
+
+            - name: Format maintained source, configuration, and documentation
+              shell: bash
+              # autofix.ci forbids .github changes; workflow checks validate those files.
+              # Reuse the repository's Bun formatter configuration for maintained files.
+              run: |
+                  git ls-files -z -- \
+                    src scripts playground/src docs \
+                    playground/package.json playground/tsconfig.json playground/vite.config.ts \
+                    README.md CONTRIBUTING.md SECURITY.md package.json tsconfig.json tsconfig.type-tests.json \
+                    playwright.config.ts .oxlintrc.json bunfig.toml theme.css tailwind.css cliff.toml \
+                    ':(glob,exclude)**/dist/**' ':(glob,exclude)**/build/**' \
+                    ':(glob,exclude)**/node_modules/**' ':(glob,exclude)**/target/**' \
+                    ':(glob,exclude)**/drizzle/**' ':(glob,exclude)**/bindings/**' \
+                    ':(glob,exclude)**/.env*' ':(glob,exclude)**/*.lock' \
+                    ':(glob,exclude)**/*.gen.*' ':(glob,exclude)**/*.generated.*' \
+                    ':(glob,exclude)**/test-results/**' ':(glob,exclude)**/playwright-report/**' \
+                    ':(glob,exclude)**/coverage/**' \
+                    | tee "$RUNNER_TEMP/autofix-allowed-paths" \
+                    | xargs -0 -r bun --no-env-file fmt --no-script
+
+                  # The action stages all files; reject any extra tracked or untracked output.
+                  while IFS= read -r -d '' path; do
+                    if ! grep -Fzxq -- "$path" "$RUNNER_TEMP/autofix-allowed-paths"; then
+                      printf '%s\n' 'Formatter changed a path outside the maintained file selection.' >&2
+                      exit 1
+                    fi
+                  done < <(
+                    git diff --name-only -z HEAD
+                    git ls-files --others --exclude-standard -z
+                  )
+
+            - name: Apply formatting fixes
+              uses: autofix-ci/action@c5b2d67aa2274e7b5a18224e8171550871fc7e4a # v1.3.4
+              with:
+                  commit-message: 'style: apply automatic formatting'
