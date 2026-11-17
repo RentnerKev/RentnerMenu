@@ -8,7 +8,7 @@ export function App() {
         state,
         handler,
         setter,
-        refs: { dialog },
+        refs: { dialog, asyncPortalHost },
     } = usePlaygroundLogic()
     return (
         <main className="mx-auto flex min-h-screen max-w-3xl flex-col gap-5 px-5 py-8">
@@ -185,6 +185,14 @@ export function App() {
                 >
                     {state.t.linkTarget}
                 </p>
+            </details>
+            <details className="rounded-lg border border-border-dark bg-surface-dark p-4">
+                <summary className="cursor-pointer text-sm">Async actions</summary>
+                <p className="my-3 text-sm">The first save fails; retry to finish successfully.</p>
+                <div data-testid="async-shadow-portal" ref={asyncPortalHost} />
+                <div className="flex justify-end">
+                    <Menu ariaLabel="Async actions" trigger="Async actions" align="end" items={state.asyncItems} portalContainer={state.asyncPortal} />
+                </div>
             </details>
             <ContextMenuRegression />
             <dialog

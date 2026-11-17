@@ -21,8 +21,56 @@ Action and link items may use `onSelect`; a menu can receive `onAction` for all
 selections. Call the selection event's `preventDefault()` to keep the menu open,
 or set `closeOnSelect: false`. Cancellation also prevents a link's native
 navigation. It does not undo a checkbox/radio callback already delivered before
-`onAction`. Callbacks are synchronous notifications: start asynchronous work in
-your application and handle its pending state and failures there.
+`onAction`. Both `onSelect` and `onAction` remain synchronous notifications.
+Returned promises are not awaited; use the opt-in action callback below for
+managed asynchronous work.
+
+### Async action items
+
+Plain action items can opt into `onSelectAsync(event): Promise<void>`. First,
+`onSelect` and `onAction` run synchronously; either may call `preventDefault()`
+to cancel the async operation. An uncancelled action stays open while its promise
+runs and closes after success unless `closeOnSelect: false` or the async callback
+calls `event.preventDefault()`. Do not await work in the synchronous callbacks.
+
+```tsx
+import { Menu, type MenuItem } from '@rentnerkev/menu'
+
+function SaveMenu() {
+    const items: MenuItem[] = [{
+        id: 'save',
+        label: 'Save',
+        onSelectAsync: async () => { await saveChanges() },
+        pendingLabel: 'Saving changes...',
+        errorLabel: 'Saving failed. Try again.',
+    }]
+    return (
+        <Menu
+            ariaLabel="Actions"
+            items={items}
+            onActionError={(error, event) => reportError(error, event.id)}
+        />
+    )
+}
+```
+
+The item has `aria-busy`, `aria-disabled`, `data-pending` and a visible status
+while running; duplicate activation of the same stable item path is ignored.
+Other actions and Escape remain usable. Failure keeps the menu and focus, shows
+an accessible alert, and allows retry. `data-error` is available for styling.
+Override `pendingLabel` and `errorLabel` for your application's language; defaults
+are `Working…` and `Action failed. Try again.`. Raw rejection details are never
+rendered. Optional menu-level `onActionError(error, event)` observes failures;
+observer throws or rejected promises are contained.
+
+Single-flight protection follows the item's full submenu ID path, even across
+rerenders and close/reopen cycles. IDs at different submenu paths are independent.
+Closing does not abort application work. A stale completion never closes a newly
+opened menu or shows its error there; errors still reach the latest observer.
+Unmounting prevents further UI updates. A callback already in flight is not
+replaced when items rerender. `onSelectAsync` is deliberately limited to plain
+action items; link navigation and controlled checkbox/radio callbacks retain
+their existing synchronous behavior.
 
 Checkbox and radio values remain application controlled:
 

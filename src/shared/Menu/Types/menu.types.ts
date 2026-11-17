@@ -28,6 +28,12 @@ export interface MenuActionItem extends MenuItemBase {
     danger?: boolean
     closeOnSelect?: boolean
     onSelect?: (event: MenuSelectEvent) => void
+    /** Opt into pending/error handling and close only after successful completion. */
+    onSelectAsync?: (event: MenuSelectEvent) => Promise<void>
+    /** Visible while onSelectAsync is running. Defaults to 'Working…'. */
+    pendingLabel?: string
+    /** Safe, visible failure message. Defaults to 'Action failed. Try again.'. */
+    errorLabel?: string
 }
 
 export interface MenuLinkItem extends MenuItemBase {
@@ -149,6 +155,8 @@ export interface MenuCommonProps extends MenuCustomizationProps {
     defaultOpen?: boolean
     onOpenChange?: (open: boolean) => void
     onAction?: (id: string, event: MenuSelectEvent) => void
+    /** Observes async action failures, including operations completed after dismissal. */
+    onActionError?: (error: unknown, event: MenuSelectEvent) => void | Promise<void>
     onEscapeKeyDown?: (event: KeyboardEvent) => void
 }
 

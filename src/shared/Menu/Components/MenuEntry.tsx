@@ -12,6 +12,7 @@ function MenuItemContent({
     level,
     reserveIcon,
     reserveIndicator,
+    actionState,
 }: Pick<
     MenuEntryProps,
     | 'menuId'
@@ -20,6 +21,7 @@ function MenuItemContent({
     | 'level'
     | 'reserveIcon'
     | 'reserveIndicator'
+    | 'actionState'
 > & {
     item: InteractiveItem
 }) {
@@ -68,6 +70,15 @@ function MenuItemContent({
                 >
                     {item.label}
                 </span>
+                {(item.type === undefined || item.type === 'item') && actionState && (
+                    <span
+                        id={actionState === 'error' ? `${menuId}-error-${level}-${encodeURIComponent(item.id)}` : undefined}
+                        role={actionState === 'error' ? 'alert' : 'status'}
+                        className={`mt-0.5 block text-xs ${actionState === 'error' ? 'text-rentner-danger' : 'text-rentner-muted'}`}
+                    >
+                        {actionState === 'pending' ? (item.pendingLabel ?? 'Working…') : (item.errorLabel ?? 'Action failed. Try again.')}
+                    </span>
+                )}
                 {item.description && (
                     <span
                         id={`${menuId}-description-${level}-${encodeURIComponent(item.id)}`}
@@ -109,6 +120,7 @@ export const MenuEntry = memo(function MenuEntry(props: MenuEntryProps) {
         dir,
         reserveIcon,
         reserveIndicator,
+        actionState,
     } = props
     const {
         state,
@@ -157,6 +169,7 @@ export const MenuEntry = memo(function MenuEntry(props: MenuEntryProps) {
                     dir={dir}
                     reserveIcon={reserveIcon}
                     reserveIndicator={reserveIndicator}
+                    actionState={actionState}
                 />
             </a>
         )
@@ -179,6 +192,7 @@ export const MenuEntry = memo(function MenuEntry(props: MenuEntryProps) {
                 dir={dir}
                 reserveIcon={reserveIcon}
                 reserveIndicator={reserveIndicator}
+                actionState={actionState}
             />
         </button>
     )

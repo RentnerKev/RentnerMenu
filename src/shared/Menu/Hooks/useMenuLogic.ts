@@ -32,6 +32,7 @@ import type {
     MenuProps,
     MenuSelectEvent,
 } from '../Types/menu.types.ts'
+import { useMenuActions } from './useMenuActions.ts'
 import { useMenuCustomization } from './useMenuCustomization.ts'
 import { useMenuModal } from './useMenuModal.ts'
 import { useMenuHover } from './useMenuHover.ts'
@@ -81,6 +82,10 @@ export function useMenuLogic(props: MenuCommonProps, mode: 'menu' | 'context') {
     const suppressClick = useRef(false)
     const typeahead = useRef({ text: '', time: 0 })
     const open = (props.open ?? internalOpen) && !props.disabled
+    const actions = useMenuActions({ open, onActionError: props.onActionError })
+    const actionKey = useStableEvent((level: number, itemId: string) =>
+        JSON.stringify([...path.slice(0, level), itemId]),
+    )
     const hover = useMenuHover({
         enabled:
             mode === 'menu' &&
@@ -210,6 +215,7 @@ export function useMenuLogic(props: MenuCommonProps, mode: 'menu' | 'context') {
             hover.handler.cancel()
             cancelHover()
             cancelGrace()
+            if (!value) actions.handler.invalidate()
             pendingRestore.current = restore
             if (value && !open) {
                 const focused = trigger.current?.ownerDocument
@@ -273,6 +279,11 @@ export function useMenuLogic(props: MenuCommonProps, mode: 'menu' | 'context') {
                 openSubmenu(level, itemId, true)
                 return
             }
+            const key = actionKey(level, itemId)
+            if (actions.handler.isPending(key)) {
+                originalEvent.preventDefault()
+                return
+            }
             const selection = { prevented: false }
             const event: MenuSelectEvent = {
                 id: item.id,
@@ -291,8 +302,15 @@ export function useMenuLogic(props: MenuCommonProps, mode: 'menu' | 'context') {
                 if (!item.checked) item.onCheckedChange()
             } else item.onSelect?.(event)
             props.onAction?.(item.id, event)
-            if (!event.defaultPrevented && item.closeOnSelect !== false)
-                requestOpen(false, true)
+            if (event.defaultPrevented) return
+            if ((item.type === undefined || item.type === 'item') && item.onSelectAsync) {
+                const operation = item.onSelectAsync
+                const closeOnSuccess = item.closeOnSelect !== false
+                actions.handler.run(key, () => operation(event), event, () => {
+                    // Keyboard navigation prevents the native event after select returns.
+                    if (closeOnSuccess && !selection.prevented) requestOpen(false, true)
+                })
+            } else if (item.closeOnSelect !== false) requestOpen(false, true)
         },
     )
     const closeSubmenu = useStableEvent((level: number) => {
@@ -718,6 +736,20 @@ export function useMenuLogic(props: MenuCommonProps, mode: 'menu' | 'context') {
                 focusItem(level, index.enabled[0]?.id)
         }
     }, [indexes, open, focusItem])
+    useLayoutEffect(() => {
+        if (!open) return
+        // A reopened menu containing only pending actions initially focuses its surface.
+        // Restore an actionable focus target once one of those operations settles.
+        for (const [level, surface] of surfaces.current) {
+            const root = surface.getRootNode()
+            const focused = 'activeElement' in root ? root.activeElement : null
+            if (focused !== surface || active.current[level] !== undefined) continue
+            const node = surface.querySelector<ItemNode>('[data-menu-item-id]:not([aria-disabled="true"])')
+            const itemId = node?.getAttribute('data-menu-item-id')
+            if (itemId !== null && itemId !== undefined && actions.state.states.get(actionKey(level, itemId)) !== 'pending')
+                focusItem(level, itemId)
+        }
+    }, [actions.state.states, open, focusItem, actionKey])
     useEffect(() => {
         if (!open) return
         const doc = trigger.current?.ownerDocument
@@ -770,9 +802,11 @@ export function useMenuLogic(props: MenuCommonProps, mode: 'menu' | 'context') {
             dir,
             ariaLabel: props.ariaLabel,
             mode,
+            actionStates: actions.state.states,
         },
         handler: {
             handleSurfaceReady,
+            actionKey,
             setTrigger,
             setSurface,
             getAnchor,
