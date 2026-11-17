@@ -84,6 +84,9 @@ export function MenuSurface({ menu, level }: MenuSurfaceProps) {
                                 <MenuEntry
                                     key={item.id}
                                     item={item}
+                                    actionState={menu.state.actionStates.get(
+                                        menu.handler.actionKey(level, item.id),
+                                    )}
                                     menuId={menu.state.id}
                                     dir={menu.state.dir}
                                     classNames={
@@ -113,6 +116,12 @@ export function MenuSurface({ menu, level }: MenuSurfaceProps) {
                         <MenuEntry
                             key={group.id}
                             item={group.items[0]!}
+                            actionState={menu.state.actionStates.get(
+                                menu.handler.actionKey(
+                                    level,
+                                    group.items[0]!.id,
+                                ),
+                            )}
                             menuId={menu.state.id}
                             dir={menu.state.dir}
                             classNames={menu.state.customization.classNames}

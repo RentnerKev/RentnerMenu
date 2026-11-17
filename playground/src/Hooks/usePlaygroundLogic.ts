@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import type { MenuItem } from '../../../src/shared/Menu/Types/menu.types.ts'
 import { initialFiles, messages } from '../config/playground.config.ts'
 import type {
@@ -22,6 +22,25 @@ export function usePlaygroundLogic(): PlaygroundLogicResult {
         useState<HTMLDialogElement | null>(null)
     const [result, setResult] = useState(t.empty as string)
     const counter = useRef(0)
+    const asyncAttempts = useRef(0)
+    const [asyncPortal, setAsyncPortal] = useState<ShadowRoot | null>(null)
+    const handleAsyncPortalHost = useCallback((host: HTMLDivElement | null) => {
+        if (
+            !host ||
+            new URLSearchParams(window.location.search).get('asyncPortal') !==
+                'shadow'
+        )
+            return
+        const root = host.shadowRoot ?? host.attachShadow({ mode: 'open' })
+        if (!root.childNodes.length) {
+            for (const style of document.querySelectorAll(
+                'style, link[rel="stylesheet"]',
+            )) {
+                root.append(style.cloneNode(true))
+            }
+        }
+        setAsyncPortal(root)
+    }, [])
     const dialog = useRef<HTMLDialogElement>(null)
     const visibleFiles = files.toSorted((a, b) =>
         sort === 'name'
@@ -178,6 +197,24 @@ export function usePlaygroundLogic(): PlaygroundLogicResult {
             extensionItems,
             outsideCount,
             items: fileItems(),
+            asyncPortal,
+            asyncItems: [
+                {
+                    id: 'async-save',
+                    label: 'Save asynchronously',
+                    pendingLabel: 'Saving changes...',
+                    errorLabel: 'Saving failed. Try again.',
+                    onSelectAsync: async () => {
+                        const attempt = ++asyncAttempts.current
+                        await new Promise<void>((resolve) =>
+                            setTimeout(resolve, 800),
+                        )
+                        if (attempt === 1)
+                            throw new Error('Demonstration failure')
+                        setResult('Changes saved')
+                    },
+                },
+            ],
         },
         handler: {
             handleAction,
@@ -190,6 +227,6 @@ export function usePlaygroundLogic(): PlaygroundLogicResult {
             handleOutsideAction: () => setOutsideCount((value) => value + 1),
         },
         setter: { setDisabled, setControlledOpen },
-        refs: { dialog },
+        refs: { dialog, asyncPortalHost: handleAsyncPortalHost },
     }
 }

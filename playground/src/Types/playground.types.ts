@@ -21,6 +21,8 @@ export interface PlaygroundLogicResult {
         extensionItems: MenuItem[]
         outsideCount: number
         items: MenuItem[]
+        asyncItems: MenuItem[]
+        asyncPortal: ShadowRoot | null
     }
     handler: {
         handleAction: (id: string, fileId?: string) => void
@@ -36,5 +38,8 @@ export interface PlaygroundLogicResult {
         setDisabled: Dispatch<SetStateAction<boolean>>
         setControlledOpen: Dispatch<SetStateAction<boolean>>
     }
-    refs: { dialog: RefObject<HTMLDialogElement | null> }
+    refs: {
+        dialog: RefObject<HTMLDialogElement | null>
+        asyncPortalHost: (host: HTMLDivElement | null) => void
+    }
 }

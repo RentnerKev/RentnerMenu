@@ -10,6 +10,7 @@ export function useMenuEntry({
     item,
     level,
     expanded,
+    actionState,
     classNames,
     setItemNode,
     handleItemEnter,
@@ -17,7 +18,8 @@ export function useMenuEntry({
     handleItemLeave,
     handleSelect,
 }: MenuEntryProps) {
-    const disabled = 'disabled' in item && item.disabled
+    const disabled =
+        ('disabled' in item && item.disabled) || actionState === 'pending'
     const setNode = useCallback(
         (node: HTMLButtonElement | HTMLAnchorElement | null) =>
             setItemNode(level, item.id, node),
@@ -73,12 +75,22 @@ export function useMenuEntry({
         tabIndex: -1,
         'aria-labelledby': `${menuId}-label-${level}-${encodeURIComponent(item.id)}`,
         'aria-describedby':
-            item.type !== 'separator' &&
-            item.type !== 'label' &&
-            item.description
-                ? `${menuId}-description-${level}-${encodeURIComponent(item.id)}`
-                : undefined,
+            [
+                item.type !== 'separator' &&
+                item.type !== 'label' &&
+                item.description
+                    ? `${menuId}-description-${level}-${encodeURIComponent(item.id)}`
+                    : undefined,
+                actionState === 'error'
+                    ? `${menuId}-error-${level}-${encodeURIComponent(item.id)}`
+                    : undefined,
+            ]
+                .filter(Boolean)
+                .join(' ') || undefined,
         'aria-disabled': disabled || undefined,
+        'aria-busy': actionState === 'pending' || undefined,
+        'data-pending': actionState === 'pending' || undefined,
+        'data-error': actionState === 'error' || undefined,
         'aria-checked':
             item.type === 'checkbox'
                 ? item.checked === 'indeterminate'

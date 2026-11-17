@@ -1,4 +1,5 @@
 import type { HTMLAttributes, PointerEvent } from 'react'
+import type { MenuAsyncActionState } from './menu.actions.ts'
 import type { MenuClassNames, MenuDirection, MenuItem } from './menu.types.ts'
 
 export interface MenuEntryProps {
@@ -8,6 +9,7 @@ export interface MenuEntryProps {
     dir: MenuDirection
     classNames: MenuClassNames | undefined
     expanded: boolean
+    actionState?: MenuAsyncActionState
     /** Reserve the same icon and selection columns throughout a menu level. */
     reserveIndicator?: boolean
     reserveIcon?: boolean
@@ -34,4 +36,6 @@ export type MenuEntryAttributes = HTMLAttributes<HTMLElement> & {
     'data-menu-item-id': string
     'data-rentner-menu-item': string
     'data-danger': boolean | undefined
+    'data-pending': boolean | undefined
+    'data-error': boolean | undefined
 }
