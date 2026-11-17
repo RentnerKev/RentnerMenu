@@ -33,4 +33,5 @@ jobs:
                   bun-version: 1.4.4
             - name: Audit resolved locked dependencies
               working-directory: ${{ matrix.directory }}
-              run: bun audit --audit-level=high
+              # Temporary exception for the unpatched picomatch advisory only.
+              run: bun audit --audit-level=high --ignore=GHSA-fc5q-39xc-vjpf
