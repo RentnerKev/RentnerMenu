@@ -187,11 +187,21 @@ export function App() {
                 </p>
             </details>
             <details className="rounded-lg border border-border-dark bg-surface-dark p-4">
-                <summary className="cursor-pointer text-sm">Async actions</summary>
-                <p className="my-3 text-sm">The first save fails; retry to finish successfully.</p>
+                <summary className="cursor-pointer text-sm">
+                    Async actions
+                </summary>
+                <p className="my-3 text-sm">
+                    The first save fails; retry to finish successfully.
+                </p>
                 <div data-testid="async-shadow-portal" ref={asyncPortalHost} />
                 <div className="flex justify-end">
-                    <Menu ariaLabel="Async actions" trigger="Async actions" align="end" items={state.asyncItems} portalContainer={state.asyncPortal} />
+                    <Menu
+                        ariaLabel="Async actions"
+                        trigger="Async actions"
+                        align="end"
+                        items={state.asyncItems}
+                        portalContainer={state.asyncPortal}
+                    />
                 </div>
             </details>
             <ContextMenuRegression />

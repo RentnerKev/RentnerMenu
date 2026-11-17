@@ -37,13 +37,17 @@ calls `event.preventDefault()`. Do not await work in the synchronous callbacks.
 import { Menu, type MenuItem } from '@rentnerkev/menu'
 
 function SaveMenu() {
-    const items: MenuItem[] = [{
-        id: 'save',
-        label: 'Save',
-        onSelectAsync: async () => { await saveChanges() },
-        pendingLabel: 'Saving changes...',
-        errorLabel: 'Saving failed. Try again.',
-    }]
+    const items: MenuItem[] = [
+        {
+            id: 'save',
+            label: 'Save',
+            onSelectAsync: async () => {
+                await saveChanges()
+            },
+            pendingLabel: 'Saving changes...',
+            errorLabel: 'Saving failed. Try again.',
+        },
+    ]
     return (
         <Menu
             ariaLabel="Actions"

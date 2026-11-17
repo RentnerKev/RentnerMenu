@@ -156,7 +156,10 @@ export interface MenuCommonProps extends MenuCustomizationProps {
     onOpenChange?: (open: boolean) => void
     onAction?: (id: string, event: MenuSelectEvent) => void
     /** Observes async action failures, including operations completed after dismissal. */
-    onActionError?: (error: unknown, event: MenuSelectEvent) => void | Promise<void>
+    onActionError?: (
+        error: unknown,
+        event: MenuSelectEvent,
+    ) => void | Promise<void>
     onEscapeKeyDown?: (event: KeyboardEvent) => void
 }
 

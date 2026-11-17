@@ -106,18 +106,29 @@ const invalidProps: MenuProps = { items }
 void invalidProps
 
 const asyncAction: MenuItem = {
-    id: 'async', label: 'Save',
-    onSelectAsync: async (event) => { if (event.id === '') event.preventDefault() },
-    pendingLabel: 'Saving', errorLabel: 'Retry',
+    id: 'async',
+    label: 'Save',
+    onSelectAsync: async (event) => {
+        if (event.id === '') event.preventDefault()
+    },
+    pendingLabel: 'Saving',
+    errorLabel: 'Retry',
 }
 void asyncAction
 const asyncProps: MenuProps = {
-    ariaLabel: 'Commands', items: [],
-    onActionError: async (error: unknown, event) => { void error; void event.id },
+    ariaLabel: 'Commands',
+    items: [],
+    onActionError: async (error: unknown, event) => {
+        void error
+        void event.id
+    },
 }
 void asyncProps
 const invalidAsyncLink: MenuItem = {
-    id: 'link', type: 'link', label: 'Link', href: '/',
+    id: 'link',
+    type: 'link',
+    label: 'Link',
+    href: '/',
     // @ts-expect-error Async actions are opt-in plain actions, never native links.
     onSelectAsync: async () => {},
 }

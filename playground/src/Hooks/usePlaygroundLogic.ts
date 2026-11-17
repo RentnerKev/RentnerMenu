@@ -25,10 +25,17 @@ export function usePlaygroundLogic(): PlaygroundLogicResult {
     const asyncAttempts = useRef(0)
     const [asyncPortal, setAsyncPortal] = useState<ShadowRoot | null>(null)
     const handleAsyncPortalHost = useCallback((host: HTMLDivElement | null) => {
-        if (!host || new URLSearchParams(window.location.search).get('asyncPortal') !== 'shadow') return
+        if (
+            !host ||
+            new URLSearchParams(window.location.search).get('asyncPortal') !==
+                'shadow'
+        )
+            return
         const root = host.shadowRoot ?? host.attachShadow({ mode: 'open' })
         if (!root.childNodes.length) {
-            for (const style of document.querySelectorAll('style, link[rel="stylesheet"]')) {
+            for (const style of document.querySelectorAll(
+                'style, link[rel="stylesheet"]',
+            )) {
                 root.append(style.cloneNode(true))
             }
         }
@@ -191,18 +198,23 @@ export function usePlaygroundLogic(): PlaygroundLogicResult {
             outsideCount,
             items: fileItems(),
             asyncPortal,
-            asyncItems: [{
-                id: 'async-save',
-                label: 'Save asynchronously',
-                pendingLabel: 'Saving changes...',
-                errorLabel: 'Saving failed. Try again.',
-                onSelectAsync: async () => {
-                    const attempt = ++asyncAttempts.current
-                    await new Promise<void>((resolve) => setTimeout(resolve, 800))
-                    if (attempt === 1) throw new Error('Demonstration failure')
-                    setResult('Changes saved')
+            asyncItems: [
+                {
+                    id: 'async-save',
+                    label: 'Save asynchronously',
+                    pendingLabel: 'Saving changes...',
+                    errorLabel: 'Saving failed. Try again.',
+                    onSelectAsync: async () => {
+                        const attempt = ++asyncAttempts.current
+                        await new Promise<void>((resolve) =>
+                            setTimeout(resolve, 800),
+                        )
+                        if (attempt === 1)
+                            throw new Error('Demonstration failure')
+                        setResult('Changes saved')
+                    },
                 },
-            }],
+            ],
         },
         handler: {
             handleAction,

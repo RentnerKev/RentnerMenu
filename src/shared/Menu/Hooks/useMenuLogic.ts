@@ -303,13 +303,22 @@ export function useMenuLogic(props: MenuCommonProps, mode: 'menu' | 'context') {
             } else item.onSelect?.(event)
             props.onAction?.(item.id, event)
             if (event.defaultPrevented) return
-            if ((item.type === undefined || item.type === 'item') && item.onSelectAsync) {
+            if (
+                (item.type === undefined || item.type === 'item') &&
+                item.onSelectAsync
+            ) {
                 const operation = item.onSelectAsync
                 const closeOnSuccess = item.closeOnSelect !== false
-                actions.handler.run(key, () => operation(event), event, () => {
-                    // Keyboard navigation prevents the native event after select returns.
-                    if (closeOnSuccess && !selection.prevented) requestOpen(false, true)
-                })
+                actions.handler.run(
+                    key,
+                    () => operation(event),
+                    event,
+                    () => {
+                        // Keyboard navigation prevents the native event after select returns.
+                        if (closeOnSuccess && !selection.prevented)
+                            requestOpen(false, true)
+                    },
+                )
             } else if (item.closeOnSelect !== false) requestOpen(false, true)
         },
     )
@@ -743,10 +752,17 @@ export function useMenuLogic(props: MenuCommonProps, mode: 'menu' | 'context') {
         for (const [level, surface] of surfaces.current) {
             const root = surface.getRootNode()
             const focused = 'activeElement' in root ? root.activeElement : null
-            if (focused !== surface || active.current[level] !== undefined) continue
-            const node = surface.querySelector<ItemNode>('[data-menu-item-id]:not([aria-disabled="true"])')
+            if (focused !== surface || active.current[level] !== undefined)
+                continue
+            const node = surface.querySelector<ItemNode>(
+                '[data-menu-item-id]:not([aria-disabled="true"])',
+            )
             const itemId = node?.getAttribute('data-menu-item-id')
-            if (itemId !== null && itemId !== undefined && actions.state.states.get(actionKey(level, itemId)) !== 'pending')
+            if (
+                itemId !== null &&
+                itemId !== undefined &&
+                actions.state.states.get(actionKey(level, itemId)) !== 'pending'
+            )
                 focusItem(level, itemId)
         }
     }, [actions.state.states, open, focusItem, actionKey])

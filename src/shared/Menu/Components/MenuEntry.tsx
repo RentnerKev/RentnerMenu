@@ -70,15 +70,23 @@ function MenuItemContent({
                 >
                     {item.label}
                 </span>
-                {(item.type === undefined || item.type === 'item') && actionState && (
-                    <span
-                        id={actionState === 'error' ? `${menuId}-error-${level}-${encodeURIComponent(item.id)}` : undefined}
-                        role={actionState === 'error' ? 'alert' : 'status'}
-                        className={`mt-0.5 block text-xs ${actionState === 'error' ? 'text-rentner-danger' : 'text-rentner-muted'}`}
-                    >
-                        {actionState === 'pending' ? (item.pendingLabel ?? 'Working…') : (item.errorLabel ?? 'Action failed. Try again.')}
-                    </span>
-                )}
+                {(item.type === undefined || item.type === 'item') &&
+                    actionState && (
+                        <span
+                            id={
+                                actionState === 'error'
+                                    ? `${menuId}-error-${level}-${encodeURIComponent(item.id)}`
+                                    : undefined
+                            }
+                            role={actionState === 'error' ? 'alert' : 'status'}
+                            className={`mt-0.5 block text-xs ${actionState === 'error' ? 'text-rentner-danger' : 'text-rentner-muted'}`}
+                        >
+                            {actionState === 'pending'
+                                ? (item.pendingLabel ?? 'Working…')
+                                : (item.errorLabel ??
+                                  'Action failed. Try again.')}
+                        </span>
+                    )}
                 {item.description && (
                     <span
                         id={`${menuId}-description-${level}-${encodeURIComponent(item.id)}`}
