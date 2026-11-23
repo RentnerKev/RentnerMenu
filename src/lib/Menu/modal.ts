@@ -44,55 +44,91 @@ function createDocumentModal(doc: Document) {
     let blockedClick = false
     let clickTimer: ReturnType<typeof setTimeout> | undefined
     let shadowRoots = new Set<ShadowRoot>()
+    let observingDocument = false
+    let lastRetained: HTMLDivElement[] = []
+    let lastStrictAncestors = new Set<Node>()
 
     function top() {
         return modals.at(-1)
     }
 
     function surfaces(modal: Modal) {
-        return [...modal.surfaces.current.values()].filter(
-            (surface) => surface.isConnected && surface.ownerDocument === doc,
-        )
+        const result: HTMLDivElement[] = []
+        for (const surface of modal.surfaces.current.values()) {
+            if (surface.isConnected && surface.ownerDocument === doc) {
+                result.push(surface)
+            }
+        }
+        return result
     }
 
     function inside(modal: Modal, event: Event) {
+        const target = event.target
+        const list = surfaces(modal)
+        if (!list.length) return false
+        if (target && typeof (target as Node).nodeType === 'number') {
+            const node = target as Node
+            for (let index = 0; index < list.length; index++) {
+                if (list[index]!.contains(node)) return true
+            }
+        }
         const path = event.composedPath()
-        return surfaces(modal).some((surface) => path.includes(surface))
+        for (let index = 0; index < list.length; index++) {
+            if (path.includes(list[index]!)) return true
+        }
+        return false
     }
 
     function deferredToShadowRoot(event: Event) {
+        if (!shadowRoots.size) return false
         const path = event.composedPath()
         // Closed roots hide internal targets until their own capture listeners run.
-        return [...shadowRoots].some(
-            (root) =>
+        for (const root of shadowRoots) {
+            if (
                 root.mode === 'closed' &&
                 path.includes(root.host) &&
-                !path.includes(root),
-        )
+                !path.includes(root)
+            ) {
+                return true
+            }
+        }
+        return false
     }
 
     function observeRoots(roots: Set<ShadowRoot>) {
+        let rootsChanged = roots.size !== shadowRoots.size
         for (const root of shadowRoots) {
             if (roots.has(root)) continue
+            rootsChanged = true
             root.removeEventListener('pointerdown', handlePointerDown, true)
             root.removeEventListener('click', handleClick, true)
             root.removeEventListener('focusin', handleFocus, true)
         }
         for (const root of roots) {
             if (shadowRoots.has(root)) continue
+            rootsChanged = true
             root.addEventListener('pointerdown', handlePointerDown, true)
             root.addEventListener('click', handleClick, true)
             root.addEventListener('focusin', handleFocus, true)
         }
         shadowRoots = roots
+        const shouldObserve = modals.length > 0
+        if (!shouldObserve) {
+            if (observingDocument) {
+                observer?.disconnect()
+                observingDocument = false
+            }
+            return
+        }
+        if (!rootsChanged && observingDocument) return
         observer?.disconnect()
-        if (!modals.length) return
         observer?.observe(doc.documentElement, {
             childList: true,
             subtree: true,
         })
         for (const root of roots)
             observer?.observe(root, { childList: true, subtree: true })
+        observingDocument = true
     }
 
     function restoreElement(element: Element, value: HiddenElement) {
@@ -104,6 +140,7 @@ function createDocumentModal(doc: Document) {
         roots: Set<ShadowRoot>,
         retained: HTMLDivElement[],
     ) {
+        if (!roots.size && !pointerStyles.size) return
         const targets = new Map<CSSStyleDeclaration, string>()
         const lockedHosts = new Set<Element>()
         for (const root of roots) {
@@ -116,17 +153,19 @@ function createDocumentModal(doc: Document) {
             targets.set((root.host as HTMLElement).style, 'none')
             lockedHosts.add(root.host)
         }
-        for (const surface of retained) {
-            let ancestor: Element | null = surface
-            while (ancestor) {
-                if (lockedHosts.has(ancestor)) {
-                    targets.set(surface.style, 'auto')
-                    break
+        if (lockedHosts.size) {
+            for (const surface of retained) {
+                let ancestor: Element | null = surface
+                while (ancestor) {
+                    if (lockedHosts.has(ancestor)) {
+                        targets.set(surface.style, 'auto')
+                        break
+                    }
+                    ancestor =
+                        ancestor.parentElement ??
+                        containingShadowRoot(ancestor)?.host ??
+                        null
                 }
-                ancestor =
-                    ancestor.parentElement ??
-                    containingShadowRoot(ancestor)?.host ??
-                    null
             }
         }
         for (const [style, original] of pointerStyles) {
@@ -154,28 +193,37 @@ function createDocumentModal(doc: Document) {
     function refresh() {
         const current = top()
         const retained = current ? surfaces(current) : []
+        const retainedSet = new Set<Element>(retained)
         const outside = new Set<Element>()
         const ancestors = new Set<Element>()
+        const strictAncestors = new Set<Node>()
         const roots = new Set<ShadowRoot>()
+        if (doc.body) strictAncestors.add(doc.body)
         for (const surface of retained) {
             let ancestor: Element | null = surface
             while (ancestor) {
                 ancestors.add(ancestor)
+                if (!retainedSet.has(ancestor)) strictAncestors.add(ancestor)
                 if (ancestor.parentElement) ancestor = ancestor.parentElement
                 else {
                     const root = containingShadowRoot(ancestor)
-                    if (root) roots.add(root)
+                    if (root) {
+                        roots.add(root)
+                        strictAncestors.add(root)
+                    }
                     ancestor = root?.host ?? null
                 }
             }
         }
-        const rootsByHost = new Map([...roots].map((root) => [root.host, root]))
+        const rootsByHost = roots.size
+            ? new Map([...roots].map((root) => [root.host, root]))
+            : null
         function visit(parent: Element | ShadowRoot) {
             for (const child of parent.children) {
-                if (retained.some((surface) => surface === child)) continue
+                if (retainedSet.has(child)) continue
                 if (ancestors.has(child)) {
                     visit(child)
-                    const root = rootsByHost.get(child)
+                    const root = rootsByHost?.get(child)
                     if (root) visit(root)
                 } else outside.add(child)
             }
@@ -195,8 +243,31 @@ function createDocumentModal(doc: Document) {
             element.setAttribute('inert', '')
             element.setAttribute('aria-hidden', 'true')
         }
+        lastRetained = retained
+        lastStrictAncestors = strictAncestors
         updatePointerStyles(roots, retained)
         observeRoots(roots)
+    }
+
+    function handleMutations(records: MutationRecord[]) {
+        const current = top()
+        const currentRetained = current ? surfaces(current) : []
+        if (currentRetained.length !== lastRetained.length) {
+            refresh()
+            return
+        }
+        for (let index = 0; index < currentRetained.length; index++) {
+            if (currentRetained[index] !== lastRetained[index]) {
+                refresh()
+                return
+            }
+        }
+        for (let index = 0; index < records.length; index++) {
+            if (lastStrictAncestors.has(records[index]!.target)) {
+                refresh()
+                return
+            }
+        }
     }
 
     function lockScroll() {
@@ -304,7 +375,8 @@ function createDocumentModal(doc: Document) {
         if (!modals.length) {
             lockScroll()
             const Observer = doc.defaultView?.MutationObserver
-            observer = Observer ? new Observer(refresh) : undefined
+            observer = Observer ? new Observer(handleMutations) : undefined
+            observingDocument = false
         }
         modals.push(modal)
         if (!listening) {
@@ -323,6 +395,7 @@ function createDocumentModal(doc: Document) {
             if (!modals.length) {
                 observer?.disconnect()
                 observer = undefined
+                observingDocument = false
                 unlockScroll()
             }
             refresh()

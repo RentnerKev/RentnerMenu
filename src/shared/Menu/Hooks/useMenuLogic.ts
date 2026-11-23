@@ -15,12 +15,12 @@ import type {
     Ref,
 } from 'react'
 import {
-    createMenuIndexer,
+    getSharedMenuIndex,
     isInteractive,
     matchIndexedItem,
-    menuLevels,
     nextIndexedItem,
 } from '../../../lib/Menu/navigation.ts'
+import type { createMenuIndex } from '../../../lib/Menu/navigation.ts'
 import {
     insidePointerCorridor,
     submenuCorridor,
@@ -29,6 +29,7 @@ import type { PointerCorridor } from '../../../lib/Menu/pointer.ts'
 import type {
     ContextMenuProps,
     MenuCommonProps,
+    MenuItem,
     MenuProps,
     MenuSelectEvent,
 } from '../Types/menu.types.ts'
@@ -39,6 +40,10 @@ import { useMenuHover } from './useMenuHover.ts'
 import { useStableEvent } from './useStableEvent.ts'
 
 type ItemNode = HTMLButtonElement | HTMLAnchorElement
+type MenuIndex = ReturnType<typeof createMenuIndex>
+
+const EMPTY_LEVELS: readonly (readonly MenuItem[])[] = []
+const EMPTY_INDEXES: readonly MenuIndex[] = []
 
 function assignRef<T>(ref: Ref<T> | undefined, value: T | null) {
     if (typeof ref === 'function') return ref(value)
@@ -56,8 +61,9 @@ export function useMenuLogic(props: MenuCommonProps, mode: 'menu' | 'context') {
     // The DOM focus styles own highlighting. Navigation does not need a render.
     const active = useRef<(string | undefined)[]>([])
     const trigger = useRef<HTMLButtonElement | HTMLDivElement | null>(null)
-    const surfaces = useRef(new Map<number, HTMLDivElement>())
-    const itemNodes = useRef(new Map<number, Map<string, ItemNode>>())
+    const [surfacesMap] = useState(() => new Map<number, HTMLDivElement>())
+    const surfaces = useRef(surfacesMap)
+    const itemNodes = useRef<Map<number, Map<string, ItemNode>> | null>(null)
     const beforeOpen = useRef<HTMLElement | null>(null)
     const focusRequest = useRef<{
         level: number
@@ -80,8 +86,11 @@ export function useMenuLogic(props: MenuCommonProps, mode: 'menu' | 'context') {
     const touchStart = useRef<{ x: number; y: number } | null>(null)
     const suppressContext = useRef(false)
     const suppressClick = useRef(false)
-    const typeahead = useRef({ text: '', time: 0 })
+    const typeahead = useRef<{ text: string; time: number } | null>(null)
     const open = (props.open ?? internalOpen) && !props.disabled
+    const openRef = useRef(open)
+    const isControlledRef = useRef(props.open !== undefined)
+    const pathRef = useRef(path)
     const actions = useMenuActions({ open, onActionError: props.onActionError })
     const actionKey = useStableEvent((level: number, itemId: string) =>
         JSON.stringify([...path.slice(0, level), itemId]),
@@ -107,16 +116,28 @@ export function useMenuLogic(props: MenuCommonProps, mode: 'menu' | 'context') {
         onClose: () => requestOpen(false),
     })
     if (!open && path.length) setPath([])
-    const levels = useMemo(
-        () => menuLevels(props.items, path),
-        [props.items, path],
-    )
-    const indexForItems = useMemo(() => createMenuIndexer(), [])
-    const indexes = useMemo(
-        () => (open ? levels.map(indexForItems) : []),
-        [levels, open, indexForItems],
-    )
-    if (levels.length !== path.length + 1)
+    const { levels, indexes } = useMemo(() => {
+        if (!open) return { levels: EMPTY_LEVELS, indexes: EMPTY_INDEXES }
+        const resolvedLevels: (readonly MenuItem[])[] = [props.items]
+        const resolvedIndexes: MenuIndex[] = [getSharedMenuIndex(props.items)]
+        for (let index = 0; index < path.length; index++) {
+            const parent = resolvedIndexes[
+                resolvedIndexes.length - 1
+            ]!.byId.get(path[index]!)
+            if (parent?.type !== 'submenu' || parent.disabled) break
+            resolvedLevels.push(parent.items)
+            resolvedIndexes.push(getSharedMenuIndex(parent.items))
+        }
+        return { levels: resolvedLevels, indexes: resolvedIndexes }
+    }, [open, props.items, path])
+    const indexesRef = useRef(indexes)
+    useLayoutEffect(() => {
+        openRef.current = open
+        isControlledRef.current = props.open !== undefined
+        pathRef.current = path
+        indexesRef.current = indexes
+    })
+    if (open && levels.length !== path.length + 1)
         setPath(path.slice(0, levels.length - 1))
     const previousOpen = useRef(false)
     const dir = customization.dir ?? 'ltr'
@@ -128,7 +149,8 @@ export function useMenuLogic(props: MenuCommonProps, mode: 'menu' | 'context') {
     const setTrigger = useCallback(
         (node: HTMLButtonElement | HTMLDivElement | null) => {
             trigger.current = node
-            if (node) setPortalHost(node.ownerDocument.body)
+            if (node && (openRef.current || isControlledRef.current))
+                setPortalHost(node.ownerDocument.body)
             const cleanup = assignRef(externalRef, node)
             return () => {
                 trigger.current = null
@@ -140,7 +162,7 @@ export function useMenuLogic(props: MenuCommonProps, mode: 'menu' | 'context') {
     )
     const getItemNode = useCallback(
         (level: number, itemId: string) =>
-            itemNodes.current.get(level)?.get(itemId) ?? null,
+            itemNodes.current?.get(level)?.get(itemId) ?? null,
         [],
     )
     const getAnchor = useCallback(
@@ -160,28 +182,41 @@ export function useMenuLogic(props: MenuCommonProps, mode: 'menu' | 'context') {
     const setItemNode = useCallback(
         (level: number, itemId: string, node: ItemNode | null) => {
             if (node) {
-                let nodes = itemNodes.current.get(level)
-                if (!nodes) itemNodes.current.set(level, (nodes = new Map()))
+                const allNodes = (itemNodes.current ??= new Map())
+                let nodes = allNodes.get(level)
+                if (!nodes) allNodes.set(level, (nodes = new Map()))
                 nodes.set(itemId, node)
             } else {
-                const nodes = itemNodes.current.get(level)
+                const nodes = itemNodes.current?.get(level)
                 nodes?.delete(itemId)
-                if (!nodes?.size) itemNodes.current.delete(level)
+                if (nodes && !nodes.size) itemNodes.current?.delete(level)
             }
         },
         [],
     )
-    const cancelHover = useCallback(() => clearTimeout(hoverTimer.current), [])
+    const cancelHover = useCallback(() => {
+        if (hoverTimer.current !== undefined) {
+            clearTimeout(hoverTimer.current)
+            hoverTimer.current = undefined
+        }
+    }, [])
     const cancelGrace = useCallback(() => {
-        clearTimeout(graceTimer.current)
+        if (graceTimer.current !== undefined) {
+            clearTimeout(graceTimer.current)
+            graceTimer.current = undefined
+        }
         grace.current = null
         deferredHover.current = null
     }, [])
     const cancelPress = useCallback(() => {
-        clearTimeout(longPressTimer.current)
+        if (longPressTimer.current !== undefined) {
+            clearTimeout(longPressTimer.current)
+            longPressTimer.current = undefined
+        }
         touchStart.current = null
     }, [])
     const truncatePath = useCallback((level: number) => {
+        if (pathRef.current.length <= level) return
         setPath((current) =>
             current.length > level ? current.slice(0, level) : current,
         )
@@ -190,12 +225,12 @@ export function useMenuLogic(props: MenuCommonProps, mode: 'menu' | 'context') {
         (level: number, itemId: string | undefined) => {
             const node =
                 itemId === undefined
-                    ? surfaces.current.get(level)
+                    ? surfaces.current?.get(level)
                     : getItemNode(level, itemId)
             if (!node || node.ownerDocument.activeElement === node) return
-            node.focus({ preventScroll: true })
             if (itemId !== undefined)
                 node.scrollIntoView?.({ block: 'nearest', inline: 'nearest' })
+            node.focus({ preventScroll: true })
         },
         [getItemNode],
     )
@@ -218,14 +253,22 @@ export function useMenuLogic(props: MenuCommonProps, mode: 'menu' | 'context') {
             if (!value) actions.handler.invalidate()
             pendingRestore.current = restore
             if (value && !open) {
-                const focused = trigger.current?.ownerDocument
+                const triggerElement = trigger.current
+                if (triggerElement) {
+                    const host = triggerElement.ownerDocument.body
+                    setPortalHost((current) =>
+                        current === host ? current : host,
+                    )
+                }
+                const focused = triggerElement?.ownerDocument
                     .activeElement as HTMLElement | null
                 beforeOpen.current =
-                    mode === 'context' && !trigger.current?.contains(focused)
-                        ? trigger.current
+                    mode === 'context' && !triggerElement?.contains(focused)
+                        ? triggerElement
                         : focused
                 truncatePath(0)
             }
+            if (!value && props.open === undefined) truncatePath(0)
             if (props.open === undefined) setInternalOpen(value)
             if (value !== open) props.onOpenChange?.(value)
         },
@@ -237,7 +280,9 @@ export function useMenuLogic(props: MenuCommonProps, mode: 'menu' | 'context') {
         ) => {
             if (props.disabled) return
             hover.handler.takeControl()
-            setPoint(position)
+            setPoint((current) =>
+                current === null && position === null ? current : position,
+            )
             truncatePath(0)
             focusRequest.current = { level: 0, edge }
             if (open)
@@ -406,14 +451,13 @@ export function useMenuLogic(props: MenuCommonProps, mode: 'menu' | 'context') {
                 !event.nativeEvent.isComposing
             ) {
                 const now = Date.now()
-                typeahead.current = {
-                    text:
-                        (now - typeahead.current.time > 700
-                            ? ''
-                            : typeahead.current.text) + event.key,
-                    time: now,
-                }
-                next = matchIndexedItem(index, current, typeahead.current.text)
+                const previousTypeahead = typeahead.current
+                const nextText =
+                    (previousTypeahead && now - previousTypeahead.time <= 700
+                        ? previousTypeahead.text
+                        : '') + event.key
+                typeahead.current = { text: nextText, time: now }
+                next = matchIndexedItem(index, current, nextText)
             } else return
             event.preventDefault()
             event.stopPropagation()
@@ -471,7 +515,7 @@ export function useMenuLogic(props: MenuCommonProps, mode: 'menu' | 'context') {
             event: ReactPointerEvent<HTMLElement>,
         ) => {
             if (event.pointerType === 'touch' || path[level] !== itemId) return
-            const submenu = surfaces.current.get(level + 1)
+            const submenu = surfaces.current?.get(level + 1)
             const node = getItemNode(level, itemId)
             if (!submenu || !node) return
             const rect = submenu.getBoundingClientRect()
@@ -556,7 +600,12 @@ export function useMenuLogic(props: MenuCommonProps, mode: 'menu' | 'context') {
         (event: ReactKeyboardEvent<HTMLButtonElement>) => {
             ;(props as MenuProps).triggerProps?.onKeyDown?.(event)
             if (event.defaultPrevented || props.disabled) return
-            if (['ArrowDown', 'ArrowUp', 'Enter', ' '].includes(event.key)) {
+            if (
+                event.key === 'ArrowDown' ||
+                event.key === 'ArrowUp' ||
+                event.key === 'Enter' ||
+                event.key === ' '
+            ) {
                 event.preventDefault()
                 openAt(event.key === 'ArrowUp' ? 'last' : 'first')
             }
@@ -654,6 +703,7 @@ export function useMenuLogic(props: MenuCommonProps, mode: 'menu' | 'context') {
         },
     )
     // The ready callback uses committed DOM refs, including a newly mounted submenu.
+    const { hasPending, isPending } = actions.handler
     const handleSurfaceReady = useCallback(
         (level: number) => {
             const request = focusRequest.current
@@ -664,17 +714,36 @@ export function useMenuLogic(props: MenuCommonProps, mode: 'menu' | 'context') {
                 surface.style.visibility !== 'visible'
             )
                 return
-            const nodes = surface.querySelectorAll<ItemNode>(
-                '[data-menu-item-id]:not([aria-disabled="true"])',
-            )
-            const node = nodes[request.edge === 'first' ? 0 : nodes.length - 1]
+            const enabled = indexesRef.current[level]?.enabled
+            let targetId: string | undefined
+            if (enabled && enabled.length > 0) {
+                if (!hasPending()) {
+                    targetId =
+                        enabled[
+                            request.edge === 'first' ? 0 : enabled.length - 1
+                        ]?.id
+                } else if (request.edge === 'first') {
+                    for (let index = 0; index < enabled.length; index++) {
+                        const candidate = enabled[index]!.id
+                        if (!isPending(actionKey(level, candidate))) {
+                            targetId = candidate
+                            break
+                        }
+                    }
+                } else {
+                    for (let index = enabled.length - 1; index >= 0; index--) {
+                        const candidate = enabled[index]!.id
+                        if (!isPending(actionKey(level, candidate))) {
+                            targetId = candidate
+                            break
+                        }
+                    }
+                }
+            }
             focusRequest.current = null
-            focusItem(
-                level,
-                node?.getAttribute('data-menu-item-id') ?? undefined,
-            )
+            focusItem(level, targetId)
         },
-        [focusItem],
+        [actionKey, hasPending, isPending, focusItem],
     )
     const dismiss = useStableEvent(() =>
         requestOpen(false, Boolean(customization.modal)),
@@ -721,7 +790,7 @@ export function useMenuLogic(props: MenuCommonProps, mode: 'menu' | 'context') {
             if (!hover.refs.openedByHover.current)
                 focusRequest.current ??= { level: 0, edge: 'first' }
             pendingRestore.current = !hover.refs.openedByHover.current
-            typeahead.current = { text: '', time: 0 }
+            typeahead.current = null
         }
         previousOpen.current = true
         if (portalHost && focusRequest.current)
@@ -746,24 +815,26 @@ export function useMenuLogic(props: MenuCommonProps, mode: 'menu' | 'context') {
         }
     }, [indexes, open, focusItem])
     useLayoutEffect(() => {
-        if (!open) return
+        if (!open || !surfaces.current) return
         // A reopened menu containing only pending actions initially focuses its surface.
         // Restore an actionable focus target once one of those operations settles.
         for (const [level, surface] of surfaces.current) {
+            if (active.current[level] !== undefined) continue
             const root = surface.getRootNode()
             const focused = 'activeElement' in root ? root.activeElement : null
-            if (focused !== surface || active.current[level] !== undefined)
-                continue
-            const node = surface.querySelector<ItemNode>(
-                '[data-menu-item-id]:not([aria-disabled="true"])',
-            )
-            const itemId = node?.getAttribute('data-menu-item-id')
-            if (
-                itemId !== null &&
-                itemId !== undefined &&
-                actions.state.states.get(actionKey(level, itemId)) !== 'pending'
-            )
-                focusItem(level, itemId)
+            if (focused !== surface) continue
+            const enabled = indexesRef.current[level]?.enabled
+            if (!enabled) continue
+            for (let index = 0; index < enabled.length; index++) {
+                const candidate = enabled[index]!.id
+                if (
+                    actions.state.states.get(actionKey(level, candidate)) !==
+                    'pending'
+                ) {
+                    focusItem(level, candidate)
+                    break
+                }
+            }
         }
     }, [actions.state.states, open, focusItem, actionKey])
     useEffect(() => {
@@ -771,15 +842,27 @@ export function useMenuLogic(props: MenuCommonProps, mode: 'menu' | 'context') {
         const doc = trigger.current?.ownerDocument
         if (!doc) return
         function outside(event: Event) {
+            const target = event.target
+            if (target && typeof (target as Node).nodeType === 'number') {
+                const node = target as Node
+                if (mode === 'menu' && trigger.current?.contains(node)) return
+                if (surfaces.current) {
+                    for (const surface of surfaces.current.values()) {
+                        if (surface.contains(node)) return
+                    }
+                }
+            }
             const nodes = event.composedPath()
             if (
-                (mode === 'menu' &&
-                    nodes.includes(trigger.current as EventTarget)) ||
-                [...surfaces.current.values()].some((surface) =>
-                    nodes.includes(surface),
-                )
+                mode === 'menu' &&
+                nodes.includes(trigger.current as EventTarget)
             )
                 return
+            if (surfaces.current) {
+                for (const surface of surfaces.current.values()) {
+                    if (nodes.includes(surface)) return
+                }
+            }
             dismiss()
         }
         if (!customization.modal) {
@@ -810,6 +893,7 @@ export function useMenuLogic(props: MenuCommonProps, mode: 'menu' | 'context') {
             open,
             id,
             levels,
+            indexes,
             path,
             point,
             mounted: portalHost !== null,

@@ -31,12 +31,32 @@ export function ContextMenu(props: ContextMenuProps) {
                 className={`${menu.state.customization.classNames?.target ?? ''} ${props.targetProps?.className ?? ''}`}
                 onContextMenu={menu.handler.handleContextMenu}
                 onKeyDown={menu.handler.handleTargetKeyDown}
-                onPointerDown={menu.handler.handlePointerDown}
-                onPointerMove={menu.handler.handlePointerMove}
-                onPointerUp={menu.handler.handlePointerUp}
-                onPointerCancel={menu.handler.handlePointerCancel}
+                onPointerDown={
+                    props.longPress
+                        ? menu.handler.handlePointerDown
+                        : props.targetProps?.onPointerDown
+                }
+                onPointerMove={
+                    props.longPress
+                        ? menu.handler.handlePointerMove
+                        : props.targetProps?.onPointerMove
+                }
+                onPointerUp={
+                    props.longPress
+                        ? menu.handler.handlePointerUp
+                        : props.targetProps?.onPointerUp
+                }
+                onPointerCancel={
+                    props.longPress
+                        ? menu.handler.handlePointerCancel
+                        : props.targetProps?.onPointerCancel
+                }
                 onClick={menu.handler.handleTargetClick}
-                onClickCapture={menu.handler.handleTargetClickCapture}
+                onClickCapture={
+                    props.longPress
+                        ? menu.handler.handleTargetClickCapture
+                        : props.targetProps?.onClickCapture
+                }
             >
                 {props.children}
             </div>

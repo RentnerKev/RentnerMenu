@@ -18,17 +18,47 @@ export function createMenuIndex(items: readonly MenuItem[]) {
     const byId = new Map<string, MenuItem>()
     const enabled: InteractiveItem[] = []
     const enabledPositions = new Map<string, number>()
-    const normalizedLabels: string[] = []
-    for (const item of items) {
+    let cachedNormalizedLabels: string[] | undefined
+    for (let index = 0; index < items.length; index++) {
+        const item = items[index]!
         // Match find/findIndex semantics even when consumer IDs are duplicated.
         if (!byId.has(item.id)) byId.set(item.id, item)
         if (!isInteractive(item) || item.disabled) continue
         if (!enabledPositions.has(item.id))
             enabledPositions.set(item.id, enabled.length)
         enabled.push(item)
-        normalizedLabels.push(item.label.trim().toLocaleLowerCase())
     }
-    return { byId, enabled, enabledPositions, normalizedLabels }
+    return {
+        byId,
+        enabled,
+        enabledPositions,
+        get normalizedLabels(): string[] {
+            if (!cachedNormalizedLabels) {
+                const labels: string[] = []
+                for (let index = 0; index < enabled.length; index++) {
+                    labels.push(
+                        enabled[index]!.label.trim().toLocaleLowerCase(),
+                    )
+                }
+                cachedNormalizedLabels = labels
+            }
+            return cachedNormalizedLabels
+        },
+    }
+}
+
+const sharedMenuIndexCache = new WeakMap<
+    readonly MenuItem[],
+    ReturnType<typeof createMenuIndex>
+>()
+
+export function getSharedMenuIndex(items: readonly MenuItem[]) {
+    let index = sharedMenuIndexCache.get(items)
+    if (!index) {
+        index = createMenuIndex(items)
+        sharedMenuIndexCache.set(items, index)
+    }
+    return index
 }
 
 /** Per-menu cache; immutable source arrays can be reclaimed when consumers replace them. */
@@ -80,15 +110,21 @@ export function matchIndexedItem(
     current: string | undefined,
     query: string,
 ): string | undefined {
-    const { enabled, enabledPositions, normalizedLabels } = index
-    const start =
-        current === undefined ? -1 : (enabledPositions.get(current) ?? -1)
-    const letters = Array.from(query)
-    const search = letters.every((letter) => letter === letters[0])
-        ? letters[0]!
-        : query
+    const { enabled, enabledPositions } = index
     // Preserve the existing empty-menu and repeated Unicode-character behavior.
     if (!enabled.length) return undefined
+    const start =
+        current === undefined ? -1 : (enabledPositions.get(current) ?? -1)
+    let search: string
+    if (query.length <= 1) {
+        search = query
+    } else {
+        const letters = Array.from(query)
+        search = letters.every((letter) => letter === letters[0])
+            ? letters[0]!
+            : query
+    }
+    const normalizedLabels = index.normalizedLabels
     const normalizedSearch = search.toLocaleLowerCase()
     for (let offset = 1; offset <= enabled.length; offset++) {
         const position = (start + offset) % enabled.length
