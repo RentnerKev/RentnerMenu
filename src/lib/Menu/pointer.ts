@@ -26,12 +26,11 @@ export function submenuCorridor(
 export function insidePointerCorridor(point: Point, corridor: PointerCorridor) {
     const { origin: a, near: b, far: c } = corridor
     if (a.x === b.x) return false
-    const cross = (start: Point, end: Point) =>
-        (point.x - end.x) * (start.y - end.y) -
-        (start.x - end.x) * (point.y - end.y)
-    const first = cross(a, b)
-    const second = cross(b, c)
-    const third = cross(c, a)
+    const px = point.x
+    const py = point.y
+    const first = (px - b.x) * (a.y - b.y) - (a.x - b.x) * (py - b.y)
+    const second = (px - c.x) * (b.y - c.y) - (b.x - c.x) * (py - c.y)
+    const third = (px - a.x) * (c.y - a.y) - (c.x - a.x) * (py - a.y)
     const negative = first < 0 || second < 0 || third < 0
     const positive = first > 0 || second > 0 || third > 0
     return !(negative && positive)

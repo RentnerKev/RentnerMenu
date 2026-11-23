@@ -6,15 +6,16 @@ import type {
 import type { MenuSelectEvent } from '../Types/menu.types.ts'
 import { useStableEvent } from './useStableEvent.ts'
 
+const EMPTY_ACTION_STATES: ReadonlyMap<string, MenuAsyncActionState> = new Map()
+
 /** Owns in-flight operations across renders, submenu changes, and open sessions. */
 export function useMenuActions({
     open,
     onActionError,
 }: MenuAsyncActionOptions) {
-    const [states, setStates] = useState<
-        ReadonlyMap<string, MenuAsyncActionState>
-    >(() => new Map())
-    const flights = useRef(new Set<string>())
+    const [states, setStates] =
+        useState<ReadonlyMap<string, MenuAsyncActionState>>(EMPTY_ACTION_STATES)
+    const flights = useRef<Set<string> | null>(null)
     const mounted = useRef(false)
     const session = useRef(0)
     const previousOpen = useRef(false)
@@ -41,12 +42,22 @@ export function useMenuActions({
         if (previousOpen.current !== open) {
             session.current++
             previousOpen.current = open
-            setStates(
-                (current) =>
-                    new Map(
-                        [...current].filter(([, state]) => state === 'pending'),
-                    ),
-            )
+            setStates((current) => {
+                if (current.size === 0) return current
+                let hasNonPending = false
+                for (const state of current.values()) {
+                    if (state !== 'pending') {
+                        hasNonPending = true
+                        break
+                    }
+                }
+                if (!hasNonPending) return current
+                const next = new Map<string, MenuAsyncActionState>()
+                for (const [key, state] of current) {
+                    if (state === 'pending') next.set(key, state)
+                }
+                return next.size === 0 ? EMPTY_ACTION_STATES : next
+            })
         }
     }, [open])
     const run = useStableEvent(
@@ -56,9 +67,10 @@ export function useMenuActions({
             event: MenuSelectEvent,
             onSuccess: () => void,
         ) => {
-            if (flights.current.has(key)) return
+            const activeFlights = (flights.current ??= new Set())
+            if (activeFlights.has(key)) return
             const startedIn = session.current
-            flights.current.add(key)
+            activeFlights.add(key)
             setStates((current) => new Map(current).set(key, 'pending'))
             // The async boundary also captures callbacks that throw before returning a Promise.
             void (async () => {
@@ -69,14 +81,17 @@ export function useMenuActions({
                     failed = true
                     void reportError(error, event)
                 } finally {
-                    flights.current.delete(key)
+                    activeFlights.delete(key)
                     if (mounted.current) {
                         const currentSession = session.current === startedIn
                         setStates((current) => {
+                            if (failed && currentSession) {
+                                return new Map(current).set(key, 'error')
+                            }
+                            if (!current.has(key)) return current
                             const next = new Map(current)
-                            if (failed && currentSession) next.set(key, 'error')
-                            else next.delete(key)
-                            return next
+                            next.delete(key)
+                            return next.size === 0 ? EMPTY_ACTION_STATES : next
                         })
                         if (!failed && currentSession) onSuccess()
                     }
@@ -86,12 +101,17 @@ export function useMenuActions({
             })
         },
     )
+    const isPending = useStableEvent(
+        (key: string) => flights.current?.has(key) ?? false,
+    )
+    const hasPending = useStableEvent(() => (flights.current?.size ?? 0) > 0)
     return {
         state: { states },
         handler: {
             run,
             invalidate,
-            isPending: (key: string) => flights.current.has(key),
+            isPending,
+            hasPending,
         },
     }
 }

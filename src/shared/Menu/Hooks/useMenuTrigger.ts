@@ -12,6 +12,9 @@ import type {
     MenuProps,
 } from '../Types/menu.types.ts'
 
+const BASE_TRIGGER_CLASS =
+    'inline-flex h-rentner-control-md items-center justify-center gap-2 rounded-rentner-control border border-rentner-border bg-rentner-control px-3 font-sans text-sm text-rentner-foreground outline-none focus-visible:ring-2 focus-visible:ring-rentner-accent disabled:cursor-not-allowed disabled:opacity-40'
+
 type TriggerProps = ButtonHTMLAttributes<HTMLButtonElement> &
     RefAttributes<HTMLButtonElement>
 
@@ -93,7 +96,10 @@ export function useMenuTrigger(
         'aria-expanded': open,
         'aria-controls': open ? `${id}-content-0` : undefined,
         dir,
-        className: `inline-flex h-rentner-control-md items-center justify-center gap-2 rounded-rentner-control border border-rentner-border bg-rentner-control px-3 font-sans text-sm text-rentner-foreground outline-none focus-visible:ring-2 focus-visible:ring-rentner-accent disabled:cursor-not-allowed disabled:opacity-40 ${customization.classNames?.trigger ?? ''} ${props.triggerProps?.className ?? ''}`,
+        className:
+            customization.classNames?.trigger || props.triggerProps?.className
+                ? `${BASE_TRIGGER_CLASS} ${customization.classNames?.trigger ?? ''} ${props.triggerProps?.className ?? ''}`
+                : BASE_TRIGGER_CLASS,
         onClick: handleClick,
         onKeyDown: handleKeyDown,
         onPointerEnter: handlePointerEnter,
@@ -110,6 +116,10 @@ export function useMenuTrigger(
                 if (!event.currentTarget.disabled) handleKeyDown(event)
             },
         }
+        const mergedStyle =
+            child.props.style || props.triggerProps?.style
+                ? { ...child.props.style, ...props.triggerProps?.style }
+                : undefined
         const merged: Record<string, unknown> = {
             ...child.props,
             ...customButtonProps,
@@ -121,7 +131,7 @@ export function useMenuTrigger(
                 child.props['aria-label'] ??
                 props.ariaLabel,
             className: `${child.props.className ?? ''} ${customization.classNames?.trigger ?? ''} ${props.triggerProps?.className ?? ''}`,
-            style: { ...child.props.style, ...props.triggerProps?.style },
+            style: mergedStyle,
             'data-rentner-menu-trigger': '',
             'data-size': customization.controlSize ?? 'md',
         }

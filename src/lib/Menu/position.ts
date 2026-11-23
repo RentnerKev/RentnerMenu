@@ -13,6 +13,13 @@ export interface MenuRectangle {
     height: number
 }
 
+const OPPOSITE_SIDE = {
+    top: 'bottom',
+    bottom: 'top',
+    left: 'right',
+    right: 'left',
+} as const
+
 export function positionMenu(
     anchor: MenuRectangle,
     width: number,
@@ -24,26 +31,33 @@ export function positionMenu(
     padding: number,
     dir: MenuDirection,
 ) {
-    const minX = (viewport.left ?? 0) + padding
-    const minY = (viewport.top ?? 0) + padding
-    const maxX = (viewport.left ?? 0) + viewport.width - padding
-    const maxY = (viewport.top ?? 0) + viewport.height - padding
-    const opposite = {
-        top: 'bottom',
-        bottom: 'top',
-        left: 'right',
-        right: 'left',
-    } as const
-    const space = {
-        top: anchor.top - minY,
-        bottom: maxY - anchor.bottom,
-        left: anchor.left - minX,
-        right: maxX - anchor.right,
-    }
-    const length = side === 'top' || side === 'bottom' ? height : width
+    const viewportLeft = viewport.left ?? 0
+    const viewportTop = viewport.top ?? 0
+    const minX = viewportLeft + padding
+    const minY = viewportTop + padding
+    const maxX = viewportLeft + viewport.width - padding
+    const maxY = viewportTop + viewport.height - padding
+    const isVerticalSide = side === 'top' || side === 'bottom'
+    const primarySpace =
+        side === 'top'
+            ? anchor.top - minY
+            : side === 'bottom'
+              ? maxY - anchor.bottom
+              : side === 'left'
+                ? anchor.left - minX
+                : maxX - anchor.right
+    const oppositeSpace =
+        side === 'top'
+            ? maxY - anchor.bottom
+            : side === 'bottom'
+              ? anchor.top - minY
+              : side === 'left'
+                ? maxX - anchor.right
+                : anchor.left - minX
+    const length = isVerticalSide ? height : width
     const resolvedSide =
-        space[side] < length + offset && space[opposite[side]] > space[side]
-            ? opposite[side]
+        primarySpace < length + offset && oppositeSpace > primarySpace
+            ? OPPOSITE_SIDE[side]
             : side
     const horizontal = resolvedSide === 'top' || resolvedSide === 'bottom'
     const effectiveAlign =

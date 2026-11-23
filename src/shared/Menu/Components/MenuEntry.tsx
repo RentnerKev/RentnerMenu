@@ -4,27 +4,28 @@ import { useMenuEntry } from '../Hooks/useMenuEntry.ts'
 import type { MenuEntryProps } from '../Types/menu.entry.ts'
 import { MenuIndicator } from './MenuIndicator.tsx'
 
-function MenuItemContent({
-    item,
-    menuId,
-    classNames,
-    dir,
-    level,
-    reserveIcon,
-    reserveIndicator,
-    actionState,
-}: Pick<
-    MenuEntryProps,
-    | 'menuId'
-    | 'classNames'
-    | 'dir'
-    | 'level'
-    | 'reserveIcon'
-    | 'reserveIndicator'
-    | 'actionState'
-> & {
-    item: InteractiveItem
-}) {
+const BASE_INDICATOR_CLASS =
+    'flex w-4 shrink-0 items-center justify-center text-rentner-accent'
+const BASE_ICON_CLASS = 'flex w-4 shrink-0 items-center justify-center'
+const BASE_LABEL_CLASS = 'block'
+const BASE_DESCRIPTION_CLASS = 'mt-0.5 block text-xs text-rentner-muted'
+const BASE_SHORTCUT_CLASS = 'ms-5 text-xs text-rentner-muted'
+const BASE_SUBMENU_INDICATOR_CLASS = 'flex shrink-0'
+const BASE_SEPARATOR_CLASS = 'my-1.5 h-px border-0 bg-rentner-border'
+const BASE_GROUP_LABEL_CLASS =
+    'px-2.5 py-1.5 text-xs font-semibold text-rentner-muted'
+
+function renderMenuItemContent(
+    item: InteractiveItem,
+    labelId: string,
+    descriptionId: string | undefined,
+    errorId: string | undefined,
+    classNames: MenuEntryProps['classNames'],
+    dir: MenuEntryProps['dir'],
+    reserveIcon: boolean | undefined,
+    reserveIndicator: boolean | undefined,
+    actionState: MenuEntryProps['actionState'],
+) {
     return (
         <>
             <span
@@ -37,7 +38,11 @@ function MenuItemContent({
                     item.type === 'radio') && (
                     <span
                         data-rentner-menu-indicator
-                        className={`flex w-4 shrink-0 items-center justify-center text-rentner-accent ${classNames?.indicator ?? ''}`}
+                        className={
+                            classNames?.indicator
+                                ? `${BASE_INDICATOR_CLASS} ${classNames.indicator}`
+                                : BASE_INDICATOR_CLASS
+                        }
                     >
                         {(item.type === 'checkbox' || item.type === 'radio') &&
                             item.checked && (
@@ -56,7 +61,11 @@ function MenuItemContent({
                 {(reserveIcon || item.icon) && (
                     <span
                         data-rentner-menu-icon
-                        className={`flex w-4 shrink-0 items-center justify-center ${classNames?.icon ?? ''}`}
+                        className={
+                            classNames?.icon
+                                ? `${BASE_ICON_CLASS} ${classNames.icon}`
+                                : BASE_ICON_CLASS
+                        }
                     >
                         {item.icon}
                     </span>
@@ -64,22 +73,26 @@ function MenuItemContent({
             </span>
             <span className="min-w-0 flex-1">
                 <span
-                    id={`${menuId}-label-${level}-${encodeURIComponent(item.id)}`}
+                    id={labelId}
                     data-rentner-menu-label
-                    className={`block ${classNames?.label ?? ''}`}
+                    className={
+                        classNames?.label
+                            ? `${BASE_LABEL_CLASS} ${classNames.label}`
+                            : BASE_LABEL_CLASS
+                    }
                 >
                     {item.label}
                 </span>
                 {(item.type === undefined || item.type === 'item') &&
                     actionState && (
                         <span
-                            id={
-                                actionState === 'error'
-                                    ? `${menuId}-error-${level}-${encodeURIComponent(item.id)}`
-                                    : undefined
-                            }
+                            id={errorId}
                             role={actionState === 'error' ? 'alert' : 'status'}
-                            className={`mt-0.5 block text-xs ${actionState === 'error' ? 'text-rentner-danger' : 'text-rentner-muted'}`}
+                            className={
+                                actionState === 'error'
+                                    ? 'mt-0.5 block text-xs text-rentner-danger'
+                                    : 'mt-0.5 block text-xs text-rentner-muted'
+                            }
                         >
                             {actionState === 'pending'
                                 ? (item.pendingLabel ?? 'Working…')
@@ -89,9 +102,13 @@ function MenuItemContent({
                     )}
                 {item.description && (
                     <span
-                        id={`${menuId}-description-${level}-${encodeURIComponent(item.id)}`}
+                        id={descriptionId}
                         data-rentner-menu-description
-                        className={`mt-0.5 block text-xs text-rentner-muted ${classNames?.description ?? ''}`}
+                        className={
+                            classNames?.description
+                                ? `${BASE_DESCRIPTION_CLASS} ${classNames.description}`
+                                : BASE_DESCRIPTION_CLASS
+                        }
                     >
                         {item.description}
                     </span>
@@ -101,7 +118,11 @@ function MenuItemContent({
                 <span
                     aria-hidden="true"
                     data-rentner-menu-shortcut
-                    className={`ms-5 text-xs text-rentner-muted ${classNames?.shortcut ?? ''}`}
+                    className={
+                        classNames?.shortcut
+                            ? `${BASE_SHORTCUT_CLASS} ${classNames.shortcut}`
+                            : BASE_SHORTCUT_CLASS
+                    }
                 >
                     {item.shortcut}
                 </span>
@@ -110,7 +131,11 @@ function MenuItemContent({
                 <span
                     aria-hidden="true"
                     data-rentner-menu-submenu-indicator
-                    className={`flex shrink-0 ${classNames?.submenuIndicator ?? ''}`}
+                    className={
+                        classNames?.submenuIndicator
+                            ? `${BASE_SUBMENU_INDICATOR_CLASS} ${classNames.submenuIndicator}`
+                            : BASE_SUBMENU_INDICATOR_CLASS
+                    }
                 >
                     <MenuIndicator kind="arrow" rtl={dir === 'rtl'} />
                 </span>
@@ -119,11 +144,44 @@ function MenuItemContent({
     )
 }
 
-export const MenuEntry = memo(function MenuEntry(props: MenuEntryProps) {
+export function renderStaticMenuEntry(
+    item: Extract<MenuEntryProps['item'], { type: 'separator' | 'label' }>,
+    classNames: MenuEntryProps['classNames'],
+) {
+    if (item.type === 'separator')
+        return (
+            <hr
+                key={item.id}
+                aria-orientation="horizontal"
+                data-rentner-menu-separator
+                className={
+                    classNames?.separator
+                        ? `${BASE_SEPARATOR_CLASS} ${classNames.separator}`
+                        : BASE_SEPARATOR_CLASS
+                }
+            />
+        )
+    return (
+        <div
+            key={item.id}
+            role="presentation"
+            data-rentner-menu-group-label
+            className={
+                classNames?.groupLabel
+                    ? `${BASE_GROUP_LABEL_CLASS} ${classNames.groupLabel}`
+                    : BASE_GROUP_LABEL_CLASS
+            }
+        >
+            {item.label}
+        </div>
+    )
+}
+
+export const InteractiveMenuEntry = memo(function InteractiveMenuEntry(
+    props: MenuEntryProps & { item: InteractiveItem },
+) {
     const {
         item,
-        menuId,
-        level,
         classNames,
         dir,
         reserveIcon,
@@ -135,24 +193,17 @@ export const MenuEntry = memo(function MenuEntry(props: MenuEntryProps) {
         handler,
         refs: { setNode },
     } = useMenuEntry(props)
-    if (item.type === 'separator')
-        return (
-            <hr
-                aria-orientation="horizontal"
-                data-rentner-menu-separator
-                className={`my-1.5 h-px border-0 bg-rentner-border ${classNames?.separator ?? ''}`}
-            />
-        )
-    if (item.type === 'label')
-        return (
-            <div
-                role="presentation"
-                data-rentner-menu-group-label
-                className={`px-2.5 py-1.5 text-xs font-semibold text-rentner-muted ${classNames?.groupLabel ?? ''}`}
-            >
-                {item.label}
-            </div>
-        )
+    const content = renderMenuItemContent(
+        item,
+        state.labelId,
+        state.descriptionId,
+        state.errorId,
+        classNames,
+        dir,
+        reserveIcon,
+        reserveIndicator,
+        actionState,
+    )
     if (item.type === 'link')
         return (
             <a
@@ -169,16 +220,7 @@ export const MenuEntry = memo(function MenuEntry(props: MenuEntryProps) {
                 onClick={handler.handleClick}
                 onAuxClick={handler.handleAuxClick}
             >
-                <MenuItemContent
-                    item={item}
-                    menuId={menuId}
-                    level={level}
-                    classNames={classNames}
-                    dir={dir}
-                    reserveIcon={reserveIcon}
-                    reserveIndicator={reserveIndicator}
-                    actionState={actionState}
-                />
+                {content}
             </a>
         )
     return (
@@ -192,16 +234,14 @@ export const MenuEntry = memo(function MenuEntry(props: MenuEntryProps) {
             onPointerDown={handler.handlePointerDown}
             onClick={handler.handleClick}
         >
-            <MenuItemContent
-                item={item}
-                menuId={menuId}
-                level={level}
-                classNames={classNames}
-                dir={dir}
-                reserveIcon={reserveIcon}
-                reserveIndicator={reserveIndicator}
-                actionState={actionState}
-            />
+            {content}
         </button>
     )
+})
+
+export const MenuEntry = memo(function MenuEntry(props: MenuEntryProps) {
+    const { item, classNames } = props
+    if (item.type === 'separator' || item.type === 'label')
+        return renderStaticMenuEntry(item, classNames)
+    return <InteractiveMenuEntry {...props} item={item} />
 })

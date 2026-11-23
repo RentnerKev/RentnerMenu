@@ -1,4 +1,6 @@
-export function MenuIndicator({
+import { memo } from 'react'
+
+export const MenuIndicator = memo(function MenuIndicator({
     kind,
     rtl = false,
 }: {
@@ -45,4 +47,4 @@ export function MenuIndicator({
             )}
         </svg>
     )
-}
+})

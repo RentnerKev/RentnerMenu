@@ -6,8 +6,10 @@ export function useMenuHover(options: MenuHoverOptions) {
     const openedByHover = useRef(false)
     const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
     const cancel = useCallback(() => {
-        clearTimeout(timer.current)
-        timer.current = undefined
+        if (timer.current !== undefined) {
+            clearTimeout(timer.current)
+            timer.current = undefined
+        }
     }, [])
     const takeControl = useCallback(() => {
         cancel()
